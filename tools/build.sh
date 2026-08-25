@@ -36,6 +36,7 @@ FILES=(
   README.md
   CHANGELOG.md
   LICENSE
+  THIRD-PARTY.md
 )
 
 for f in "${FILES[@]}"; do

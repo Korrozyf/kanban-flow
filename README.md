@@ -332,12 +332,13 @@ jira-kanban-dashboard/
 │   └── release.yml        # build + release GitHub sur étiquette vX.Y.Z
 ├── CHANGELOG.md           # journal des versions (semver)
 ├── LICENSE                # MIT
+├── THIRD-PARTY.md         # bibliothèques tierces embarquées
 └── README.md
 ```
 
 ## Licence
 
-[MIT](LICENSE). Embarque html2canvas 1.4.1 (MIT, © Niklas von Hertzen).
+[MIT](LICENSE). Bibliothèques tierces embarquées : voir [THIRD-PARTY.md](THIRD-PARTY.md) (html2canvas 1.4.1, MIT, © Niklas von Hertzen).
 
 ## Contribuer / signaler un problème
 
