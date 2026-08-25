@@ -1,8 +1,8 @@
-# Bibliothèques tierces
+# Third-party libraries
 
-Ce dépôt embarque une bibliothèque tierce :
+This repository vendors one third-party library:
 
 - html2canvas 1.4.1 (`lib/html2canvas.min.js`) — © Niklas von Hertzen,
-  licence MIT — https://github.com/niklasvh/html2canvas
+  MIT license — https://github.com/niklasvh/html2canvas
 
-Les autres fichiers du dépôt sont sous licence MIT (voir `LICENSE`).
+Every other file in this repository is under the MIT license (see `LICENSE`).

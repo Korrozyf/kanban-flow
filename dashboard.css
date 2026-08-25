@@ -7,12 +7,12 @@
   --muted: #8b98a9;
   --accent: #3b82f6;
   --accent-2: #60a5fa;
-  --engage: #a78bfa; /* throughput engagé (semaines complètes) : violet */
+  --engage: #a78bfa; /* committed throughput (completed weeks): purple */
   --good: #22c55e;
   --bad: #ef4444;
   --neutral: #94a3b8;
-  --current: #facc15; /* semaine en cours — réalisé : jaune */
-  --current-2: #f59e0b; /* semaine en cours — engagé : ambre */
+  --current: #facc15; /* current week — delivered: yellow */
+  --current-2: #f59e0b; /* current week — committed: amber */
   --current-soft: rgba(250, 204, 21, 0.14);
   --current-line: #fbbf24;
   --shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
@@ -115,8 +115,8 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .trend.bad { background: rgba(239, 68, 68, 0.16); color: var(--bad); }
 .trend.stable { background: rgba(96, 165, 250, 0.16); color: var(--accent-2); }
 
-/* Tous les graphiques occupent la MÊME taille : colonnes égales, panneaux
-   étirés à la même hauteur, zone de graphique alignée en bas de chaque panneau. */
+/* All charts occupy the SAME size: equal columns, panels stretched to the
+   same height, chart area aligned to the bottom of each panel. */
 .charts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -124,8 +124,8 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
   align-items: stretch;
 }
 .chart-panel { display: flex; flex-direction: column; }
-/* Le throughput occupe toute la largeur ; lead time et cycle time se
-   partagent la ligne suivante, côte à côte. */
+/* Throughput takes the full width; lead time and cycle time share the
+   next row, side by side. */
 .chart-panel-full { grid-column: 1 / -1; }
 .chart-panel h3 { margin: 0 0 10px; font-size: 14px; }
 .chart-panel h3 small { color: var(--muted); font-weight: 400; }
@@ -136,7 +136,7 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .bar-current { fill: var(--current); }
 .bar-done { fill: var(--accent); }
 .bar-engage { fill: var(--engage); }
-/* Semaine en cours : les barres elles-mêmes passent en tons chauds (jaune/ambre) */
+/* Current week: the bars themselves switch to warm tones (yellow/amber) */
 .bar-done-current { fill: var(--current); }
 .bar-engage-current { fill: var(--current-2); }
 .band-current { fill: var(--current-soft); }
@@ -184,7 +184,7 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
   text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted);
 }
 
-/* Signaux de flux Ready / Backlog */
+/* Ready / Backlog flow signals */
 .signals-table td.sig-warn { color: var(--current); font-weight: 700; }
 .signals-table td.sig-zero { color: var(--muted); }
 tr.row-current { background: var(--current-soft); }
@@ -201,11 +201,11 @@ tr.row-current td:first-child { border-left: 3px solid var(--current); }
 .badge.warn { background: var(--current-soft); color: var(--current); }
 .metric-current { color: var(--current); }
 .card-current { border-color: rgba(250, 204, 21, 0.4); }
-/* Les chiffres clés (build ET run) sont des DONNÉES, pas des alertes : on ne
-   leur applique pas le jaune (couleur d'avertissement). Contraste maximal via
-   la couleur de texte normale ; l'appartenance à la semaine en cours reste
-   portée par le badge « en cours » et la bordure de la carte (encodage
-   redondant, conforme aux recommandations d'accessibilité). */
+/* Key figures (build AND run) are DATA, not alerts: we do not apply
+   yellow (a warning color) to them. Maximum contrast via the normal text
+   color; membership in the current week is still conveyed by the
+   "current" badge and the card border (redundant encoding, in line with
+   accessibility recommendations). */
 .card-current .metric { color: var(--text); }
 .pill-current {
   display: inline-block; margin-left: 6px; padding: 1px 7px;
@@ -222,7 +222,7 @@ td a { color: var(--accent-2); text-decoration: none; }
 td a:hover { text-decoration: underline; }
 
 details summary { cursor: pointer; font-weight: 600; }
-/* Listes de tickets repliables */
+/* Collapsible ticket lists */
 .list-details > summary {
   font-size: 14px;
   padding: 2px 0;
@@ -249,7 +249,7 @@ details summary { cursor: pointer; font-weight: 600; }
   .charts { grid-template-columns: 1fr; }
 }
 
-/* Mode Run — graphique combiné ouverts / fermés */
+/* Run mode — combined opened / closed chart */
 .bar-open { fill: var(--engage); }
 .bar-closed { fill: var(--accent); }
 .bar-open-current { fill: var(--current-2); }
@@ -259,12 +259,12 @@ details summary { cursor: pointer; font-weight: 600; }
 .swatch-open-current { background: var(--current-2); }
 .swatch-closed-current { background: var(--current); }
 
-/* Compteurs d'ancienneté des tickets ouverts (run) :
-   vert 0–1 jour, orange 1–2 jours, rouge > 2 jours. */
-/* Compteurs d'ancienneté : pas de fond coloré (hors charte, thème sombre).
-   Encodage redondant conforme aux recommandations d'accessibilité :
-   pastille de couleur + infobulle textuelle, texte lu dans la couleur
-   normale du tableau pour garantir le contraste. */
+/* Age counters for open tickets (run):
+   green 0-1 day, orange 1-2 days, red > 2 days. */
+/* Age counters: no colored background (off-brand, dark theme).
+   Redundant encoding in line with accessibility recommendations:
+   colored dot + text tooltip, text kept in the table's normal color
+   to guarantee contrast. */
 td.age { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .age-dot {
   width: 8px;
@@ -280,10 +280,10 @@ td.age-warn .age-dot,
 .metric.age-warn .age-dot { background: var(--current-2); }
 td.age-bad .age-dot,
 .metric.age-bad .age-dot { background: var(--bad); }
-/* Seul le seuil critique reçoit une emphase typographique supplémentaire. */
+/* Only the critical threshold receives extra typographic emphasis. */
 td.age-bad { font-weight: 600; }
 
-/* Même encodage dans une carte KPI : la pastille est proportionnée au chiffre. */
+/* Same encoding in a KPI card: the dot is sized proportionally to the figure. */
 .metric.age { display: flex; align-items: center; font-variant-numeric: tabular-nums; }
 .metric.age .age-dot { width: 12px; height: 12px; margin-right: 10px; }
 
@@ -297,7 +297,7 @@ td.age-bad { font-weight: 600; }
 }
 .age-legend span { display: inline-flex; align-items: center; }
 
-/* --- Export image : en-tête ajouté dans la capture (masqué à l'écran) --- */
+/* --- Image export: header added to the capture (hidden on screen) --- */
 .export-header {
   border-bottom: 1px solid var(--border);
   padding-bottom: 12px;
@@ -313,6 +313,6 @@ td.age-bad { font-weight: 600; }
   color: var(--muted);
   font-size: 13px;
 }
-/* Pendant la capture, le bouton d'export est désactivé : évite un double clic. */
+/* During capture, the export button is disabled: prevents a double click. */
 .btn[disabled] { opacity: 0.5; cursor: default; }
 .btn[disabled]:hover { background: var(--panel); border-color: var(--border); }

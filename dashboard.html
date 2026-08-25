@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kanban Flow — Tableau de bord Scrum Master</title>
+    <title>Kanban Flow — Kanban facilitator dashboard</title>
     <link rel="stylesheet" href="dashboard.css" />
   </head>
   <body>
@@ -12,33 +12,33 @@
         <span class="logo">📊</span>
         <div>
           <h1>Kanban Flow</h1>
-          <p class="subtitle">Tableau de bord Scrum Master — JIRA Cloud</p>
+          <p class="subtitle">Kanban facilitator dashboard — JIRA Cloud</p>
         </div>
       </div>
       <div class="controls">
-        <label for="projectSelect" class="sr-label">Équipe / Projet</label>
-        <select id="projectSelect" aria-label="Sélection de l'équipe">
-          <option value="">— Choisir une équipe —</option>
+        <label for="projectSelect" class="sr-label">Team / Project</label>
+        <select id="projectSelect" aria-label="Team selection">
+          <option value="">— Choose a team —</option>
         </select>
-        <button id="refreshBtn" class="btn" title="Rafraîchir les données">↻ Rafraîchir</button>
-        <label for="exportFormat" class="sr-label">Format d'export</label>
-        <select id="exportFormat" aria-label="Format de l'image exportée" title="Format de l'image">
+        <button id="refreshBtn" class="btn" title="Refresh data">↻ Refresh</button>
+        <label for="exportFormat" class="sr-label">Export format</label>
+        <select id="exportFormat" aria-label="Exported image format" title="Image format">
           <option value="png">PNG</option>
           <option value="jpeg">JPG</option>
         </select>
         <button id="exportBtn" class="btn" disabled
-                title="Enregistrer la page complète d'indicateurs en image">🖼 Exporter l'image</button>
-        <button id="optionsBtn" class="btn btn-ghost" title="Configuration">⚙ Configuration</button>
+                title="Save the full metrics page as an image">🖼 Export image</button>
+        <button id="optionsBtn" class="btn btn-ghost" title="Settings">⚙ Settings</button>
       </div>
     </header>
 
     <main id="main">
       <section id="statusPanel" class="panel status">
-        <p id="statusMessage">Sélectionnez une équipe pour afficher ses indicateurs de flux.</p>
+        <p id="statusMessage">Select a team to display its flow metrics.</p>
       </section>
 
       <section id="dashboard" class="hidden">
-        <!-- En-tête ajouté uniquement dans l'image exportée (masqué à l'écran). -->
+        <!-- Header added only in the exported image (hidden on screen). -->
         <div id="exportHeader" class="export-header hidden">
           <h2 id="exportTitle"></h2>
           <p id="exportSubtitle"></p>
@@ -47,14 +47,14 @@
 
         <div id="buildView">
         <p class="legend">
-          <span class="legend-item"><span class="swatch swatch-complete"></span> Semaines complètes (bleu / violet)</span>
-          <span class="legend-item"><span class="swatch swatch-current"></span> Semaine en cours — incomplète (jaune / ambre dans les graphiques)</span>
+          <span class="legend-item"><span class="swatch swatch-complete"></span> Completed weeks (blue / purple)</span>
+          <span class="legend-item"><span class="swatch swatch-current"></span> Current week — incomplete (yellow / amber in charts)</span>
         </p>
-        <p class="cards-caption">Chiffres clés de la <strong>semaine en cours</strong> (badge « en cours ») — la tendance compare la semaine en cours à la semaine précédente.</p>
+        <p class="cards-caption">Key figures for the <strong>current week</strong> ("current" badge) — the trend compares the current week to the previous week.</p>
         <div class="cards">
           <div class="card card-current">
             <div class="card-head">
-              <h3>Throughput engagé <span class="pill-current">en cours</span></h3>
+              <h3>Committed throughput <span class="pill-current">current</span></h3>
               <span id="engageTrend" class="trend"></span>
             </div>
             <div class="metric" id="engageValue">–</div>
@@ -62,7 +62,7 @@
           </div>
           <div class="card card-current">
             <div class="card-head">
-              <h3>Throughput réalisé <span class="pill-current">en cours</span></h3>
+              <h3>Delivered throughput <span class="pill-current">current</span></h3>
               <span id="thrTrend" class="trend"></span>
             </div>
             <div class="metric" id="thrValue">–</div>
@@ -70,7 +70,7 @@
           </div>
           <div class="card card-current hidden" id="spCard">
             <div class="card-head">
-              <h3>Story points livrés <span class="pill-current">en cours</span></h3>
+              <h3>Delivered story points <span class="pill-current">current</span></h3>
               <span id="spTrend" class="trend"></span>
             </div>
             <div class="metric" id="spValue">–</div>
@@ -78,31 +78,31 @@
           </div>
           <div class="card card-current">
             <div class="card-head">
-              <h3>Lead time <small id="leadAggLabel">(médiane)</small> <span class="pill-current">en cours</span></h3>
+              <h3>Lead time <small id="leadAggLabel">(median)</small> <span class="pill-current">current</span></h3>
               <span id="leadTrend" class="trend"></span>
             </div>
             <div class="metric" id="leadValue">–</div>
-            <div class="metric-note">jours — semaine en cours</div>
+            <div class="metric-note">days — current week</div>
           </div>
           <div class="card card-current">
             <div class="card-head">
-              <h3>Cycle time <small id="cycleAggLabel">(médiane)</small> <span class="pill-current">en cours</span></h3>
+              <h3>Cycle time <small id="cycleAggLabel">(median)</small> <span class="pill-current">current</span></h3>
               <span id="cycleTrend" class="trend"></span>
             </div>
             <div class="metric" id="cycleValue">–</div>
-            <div class="metric-note">jours — semaine en cours</div>
+            <div class="metric-note">days — current week</div>
           </div>
         </div>
 
         <div class="panel" id="signalsPanel">
-          <h3>Signaux de flux par semaine <small>(board / backlog)</small></h3>
+          <h3>Weekly flow signals <small>(board / backlog)</small></h3>
           <div class="table-wrap">
             <table class="signals-table" id="signalsTable">
               <thead>
                 <tr>
-                  <th>Semaine</th>
-                  <th id="sigAddedHead">Ajoutés au board</th>
-                  <th id="sigBackHead">Remis en backlog</th>
+                  <th>Week</th>
+                  <th id="sigAddedHead">Added to board</th>
+                  <th id="sigBackHead">Moved back to backlog</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -113,145 +113,145 @@
 
         <div class="charts">
           <div class="panel chart-panel chart-panel-full">
-            <h3>Throughput par semaine <small>(engagé vs réalisé)</small></h3>
+            <h3>Throughput per week <small>(committed vs delivered)</small></h3>
             <div class="legend-group">
-              <h4>Semaines complètes</h4>
+              <h4>Completed weeks</h4>
               <p class="legend legend-series">
-                <span class="legend-item"><span class="swatch swatch-engage"></span> <span id="engageLegend">Engagé</span></span>
-                <span class="legend-item"><span class="swatch swatch-done"></span> Réalisé (tickets terminés)</span>
+                <span class="legend-item"><span class="swatch swatch-engage"></span> <span id="engageLegend">Committed</span></span>
+                <span class="legend-item"><span class="swatch swatch-done"></span> Delivered (completed tickets)</span>
               </p>
             </div>
             <div class="legend-group">
-              <h4>Semaine en cours</h4>
+              <h4>Current week</h4>
               <p class="legend legend-series">
-                <span class="legend-item"><span class="swatch swatch-engage-current"></span> Engagé (ambre)</span>
-                <span class="legend-item"><span class="swatch swatch-done-current"></span> Réalisé (jaune)</span>
+                <span class="legend-item"><span class="swatch swatch-engage-current"></span> Committed (amber)</span>
+                <span class="legend-item"><span class="swatch swatch-done-current"></span> Delivered (yellow)</span>
               </p>
             </div>
             <div id="throughputChart" class="chart-box"></div>
           </div>
           <div class="panel chart-panel chart-panel-full hidden" id="spChartPanel">
-            <h3>Story points livrés par semaine <small>(tickets terminés)</small></h3>
+            <h3>Delivered story points per week <small>(completed tickets)</small></h3>
             <div class="legend-group">
-              <h4>Semaines complètes</h4>
+              <h4>Completed weeks</h4>
               <p class="legend legend-series">
-                <span class="legend-item"><span class="swatch swatch-done"></span> Story points livrés</span>
+                <span class="legend-item"><span class="swatch swatch-done"></span> Delivered story points</span>
               </p>
             </div>
             <div class="legend-group">
-              <h4>Semaine en cours</h4>
+              <h4>Current week</h4>
               <p class="legend legend-series">
-                <span class="legend-item"><span class="swatch swatch-done-current"></span> Story points livrés (jaune)</span>
+                <span class="legend-item"><span class="swatch swatch-done-current"></span> Delivered story points (yellow)</span>
               </p>
             </div>
             <div id="spChart" class="chart-box"></div>
           </div>
           <div class="panel chart-panel">
-            <h3>Lead time par semaine <small>(jours)</small></h3>
+            <h3>Lead time per week <small>(days)</small></h3>
             <div id="leadChart" class="chart-box"></div>
           </div>
           <div class="panel chart-panel">
-            <h3>Cycle time par semaine <small>(jours)</small></h3>
+            <h3>Cycle time per week <small>(days)</small></h3>
             <div id="cycleChart" class="chart-box"></div>
           </div>
         </div>
 
         <div class="panel">
           <details class="list-details">
-            <summary>Tickets terminés dans la semaine en cours (<span id="detailCount">0</span>)</summary>
+            <summary>Tickets completed in the current week (<span id="detailCount">0</span>)</summary>
             <div class="table-wrap">
               <table id="detailTable">
                 <thead>
                   <tr>
                     <th>Ticket</th>
-                    <th>Résumé</th>
-                    <th>Semaine</th>
-                    <th>Terminé le</th>
+                    <th>Summary</th>
+                    <th>Week</th>
+                    <th>Completed on</th>
                     <th class="sp-col hidden">Story points</th>
-                    <th>Lead (j)</th>
-                    <th>Cycle (j)</th>
+                    <th>Lead (d)</th>
+                    <th>Cycle (d)</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
               </table>
             </div>
             <p class="age-legend">
-              <span><i class="age-dot" style="background: var(--good)"></i> cycle ≤ 2 jours</span>
-              <span><i class="age-dot" style="background: var(--current-2)"></i> entre 2 et 4 jours</span>
-              <span><i class="age-dot" style="background: var(--bad)"></i> plus de 4 jours</span>
+              <span><i class="age-dot" style="background: var(--good)"></i> cycle ≤ 2 days</span>
+              <span><i class="age-dot" style="background: var(--current-2)"></i> between 2 and 4 days</span>
+              <span><i class="age-dot" style="background: var(--bad)"></i> more than 4 days</span>
             </p>
           </details>
-          <p class="jql-note">JQL utilisée : <code id="jqlText"></code></p>
+          <p class="jql-note">JQL used: <code id="jqlText"></code></p>
         </div>
         </div><!-- /#buildView -->
 
         <div id="runView" class="hidden">
-          <p class="cards-caption">Kanban de <strong>run</strong> — tickets identifiés par leurs labels. Semaines du lundi 00:00 au dimanche 23:59. Chiffres clés de la <strong>semaine en cours</strong> (badge « en cours ») — la tendance compare la semaine en cours à la semaine précédente.</p>
+          <p class="cards-caption">Kanban <strong>run</strong> — tickets identified by their labels. Weeks from Monday 00:00 to Sunday 23:59. Key figures for the <strong>current week</strong> ("current" badge) — the trend compares the current week to the previous week.</p>
           <div class="cards">
             <div class="card card-current">
               <div class="card-head">
-                <h3>Tickets ouverts <span class="pill-current">en cours</span></h3>
+                <h3>Open tickets <span class="pill-current">current</span></h3>
                 <span id="runOpenTrend" class="trend"></span>
               </div>
               <div class="metric" id="runOpenValue">–</div>
-              <div class="metric-note" id="runOpenNote">non résolus à ce jour</div>
+              <div class="metric-note" id="runOpenNote">not resolved as of today</div>
             </div>
             <div class="card card-current">
               <div class="card-head">
-                <h3>Tickets fermés <span class="pill-current">en cours</span></h3>
+                <h3>Closed tickets <span class="pill-current">current</span></h3>
                 <span id="runCloseTrend" class="trend"></span>
               </div>
               <div class="metric" id="runCloseValue">–</div>
-              <div class="metric-note" id="runCloseNote">fermés dans la semaine en cours</div>
+              <div class="metric-note" id="runCloseNote">closed in the current week</div>
             </div>
             <div class="card card-current">
               <div class="card-head">
-                <h3>Tickets créés <span class="pill-current">en cours</span></h3>
+                <h3>Created tickets <span class="pill-current">current</span></h3>
                 <span id="runCreatedTrend" class="trend"></span>
               </div>
               <div class="metric" id="runCreatedValue">–</div>
-              <div class="metric-note" id="runCreatedNote">créés dans la semaine en cours</div>
+              <div class="metric-note" id="runCreatedNote">created in the current week</div>
             </div>
             <div class="card card-current">
               <div class="card-head">
-                <h3>Temps moyen de résolution <span class="pill-current">en cours</span></h3>
+                <h3>Average resolution time <span class="pill-current">current</span></h3>
                 <span id="runResolTrend" class="trend"></span>
               </div>
               <div class="metric" id="runResolValue">–</div>
-              <div class="metric-note" id="runResolNote">moyenne création → fermeture des tickets fermés cette semaine</div>
+              <div class="metric-note" id="runResolNote">average creation → closing for tickets closed this week</div>
               <p class="age-legend">
-                <span><i class="age-dot" style="background: var(--good)"></i> ≤ 1 jour</span>
-                <span><i class="age-dot" style="background: var(--current-2)"></i> 1 à 2 jours</span>
-                <span><i class="age-dot" style="background: var(--bad)"></i> &gt; 2 jours</span>
+                <span><i class="age-dot" style="background: var(--good)"></i> ≤ 1 day</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i> 1 to 2 days</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i> &gt; 2 days</span>
               </p>
             </div>
           </div>
 
           <div class="charts">
             <div class="panel chart-panel">
-              <h3>Ouverts vs fermés par semaine <small>(créés / fermés dans la semaine)</small></h3>
+              <h3>Opened vs closed per week <small>(created / closed within the week)</small></h3>
               <div class="legend-group">
-                <h4>Semaines complètes</h4>
+                <h4>Completed weeks</h4>
                 <p class="legend legend-series">
-                  <span class="legend-item"><span class="swatch swatch-open"></span> Ouverts (créés dans la semaine)</span>
-                  <span class="legend-item"><span class="swatch swatch-closed"></span> Fermés dans la semaine</span>
+                  <span class="legend-item"><span class="swatch swatch-open"></span> Opened (created within the week)</span>
+                  <span class="legend-item"><span class="swatch swatch-closed"></span> Closed within the week</span>
                 </p>
               </div>
               <div class="legend-group">
-                <h4>Semaine en cours</h4>
+                <h4>Current week</h4>
                 <p class="legend legend-series">
-                  <span class="legend-item"><span class="swatch swatch-open-current"></span> Ouverts (ambre)</span>
-                  <span class="legend-item"><span class="swatch swatch-closed-current"></span> Fermés (jaune)</span>
+                  <span class="legend-item"><span class="swatch swatch-open-current"></span> Opened (amber)</span>
+                  <span class="legend-item"><span class="swatch swatch-closed-current"></span> Closed (yellow)</span>
                 </p>
               </div>
               <div id="runFlowChart" class="chart-box"></div>
             </div>
             <div class="panel chart-panel">
-              <h3>Tickets créés par jour <small>(semaine en cours vs semaine précédente)</small></h3>
+              <h3>Tickets created per day <small>(current week vs previous week)</small></h3>
               <div class="legend-group">
                 <p class="legend legend-series">
-                  <span class="legend-item"><span class="swatch swatch-open"></span> Semaine précédente</span>
-                  <span class="legend-item"><span class="swatch swatch-done-current"></span> Semaine en cours</span>
+                  <span class="legend-item"><span class="swatch swatch-open"></span> Previous week</span>
+                  <span class="legend-item"><span class="swatch swatch-done-current"></span> Current week</span>
                 </p>
               </div>
               <div id="runDailyChart" class="chart-box"></div>
@@ -261,33 +261,33 @@
 
           <div class="panel">
             <details class="list-details">
-              <summary>Tickets en priorité maximale <small>(<span id="runMaxPrioCount">0</span>)</small></summary>
+              <summary>Highest-priority tickets <small>(<span id="runMaxPrioCount">0</span>)</small></summary>
               <div class="table-wrap">
                 <table id="runMaxPrioTable">
                   <thead>
                     <tr>
-                      <th>Ticket</th><th>Résumé</th><th>Priorité</th><th>Créé le</th>
-                      <th>Création → 1er commentaire</th><th>Création → résolution</th>
+                      <th>Ticket</th><th>Summary</th><th>Priority</th><th>Created on</th>
+                      <th>Created → first comment</th><th>Created → resolved</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
                 </table>
               </div>
               <p class="age-legend">
-                <span><i class="age-dot" style="background: var(--good)"></i> moins de 1 jour</span>
-                <span><i class="age-dot" style="background: var(--current-2)"></i> entre 1 et 2 jours</span>
-                <span><i class="age-dot" style="background: var(--bad)"></i> plus de 2 jours</span>
+                <span><i class="age-dot" style="background: var(--good)"></i> less than 1 day</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i> between 1 and 2 days</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i> more than 2 days</span>
               </p>
             </details>
           </div>
 
           <div class="panel">
             <details class="list-details">
-              <summary>Tickets ouverts non assignés <small>(<span id="runUnassignedCount">0</span>)</small></summary>
+              <summary>Unassigned open tickets <small>(<span id="runUnassignedCount">0</span>)</small></summary>
               <div class="table-wrap">
                 <table id="runUnassignedTable">
                   <thead>
-                    <tr><th>Ticket</th><th>Résumé</th><th>Statut</th><th>Priorité</th><th>Créé le</th></tr>
+                    <tr><th>Ticket</th><th>Summary</th><th>Status</th><th>Priority</th><th>Created on</th></tr>
                   </thead>
                   <tbody></tbody>
                 </table>
@@ -297,62 +297,62 @@
 
           <div class="panel">
             <details class="list-details">
-              <summary>Tickets ouverts dans le board (non résolus) <small>(<span id="runOpenCount">0</span>)</small> — triés par priorité décroissante puis du plus ancien au plus récent</summary>
+              <summary>Open tickets on the board (not resolved) <small>(<span id="runOpenCount">0</span>)</small> — sorted by descending priority then oldest to most recent</summary>
               <div class="table-wrap">
                 <table id="runOpenTable">
                   <thead>
-                    <tr><th>Ticket</th><th>Résumé</th><th>Statut</th><th>Priorité</th><th>Assigné</th><th>Créé le</th><th>Depuis ouverture</th><th>Depuis dernière action</th></tr>
+                    <tr><th>Ticket</th><th>Summary</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Age since created</th><th>Since last activity</th></tr>
                   </thead>
                   <tbody></tbody>
                 </table>
               </div>
               <div class="age-legend">
-                <span><i class="age-dot" style="background: var(--good)"></i>moins de 1 jour</span>
-                <span><i class="age-dot" style="background: var(--current-2)"></i>1 à 2 jours</span>
-                <span><i class="age-dot" style="background: var(--bad)"></i>plus de 2 jours</span>
+                <span><i class="age-dot" style="background: var(--good)"></i>less than 1 day</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i>1 to 2 days</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i>more than 2 days</span>
               </div>
             </details>
           </div>
 
           <div class="panel">
             <details class="list-details">
-              <summary>Tickets ouverts non planifiés (backlog) <small>(<span id="runBacklogCount">0</span>)</small> — triés par priorité décroissante puis du plus ancien au plus récent</summary>
+              <summary>Unplanned open tickets (backlog) <small>(<span id="runBacklogCount">0</span>)</small> — sorted by descending priority then oldest to most recent</summary>
               <div class="table-wrap">
                 <table id="runBacklogTable">
                   <thead>
-                    <tr><th>Ticket</th><th>Résumé</th><th>Statut</th><th>Priorité</th><th>Assigné</th><th>Créé le</th><th>Depuis ouverture</th><th>Depuis dernière action</th></tr>
+                    <tr><th>Ticket</th><th>Summary</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Age since created</th><th>Since last activity</th></tr>
                   </thead>
                   <tbody></tbody>
                 </table>
               </div>
               <div class="age-legend">
-                <span><i class="age-dot" style="background: var(--good)"></i>moins de 1 jour</span>
-                <span><i class="age-dot" style="background: var(--current-2)"></i>1 à 2 jours</span>
-                <span><i class="age-dot" style="background: var(--bad)"></i>plus de 2 jours</span>
+                <span><i class="age-dot" style="background: var(--good)"></i>less than 1 day</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i>1 to 2 days</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i>more than 2 days</span>
               </div>
             </details>
           </div>
 
           <div class="panel">
             <details class="list-details">
-              <summary>Tickets fermés cette semaine <small>(<span id="runCloseListCount">0</span>)</small> — triés par priorité décroissante puis de la fermeture la plus récente à la plus ancienne</summary>
+              <summary>Tickets closed this week <small>(<span id="runCloseListCount">0</span>)</small> — sorted by descending priority then most recently closed to oldest</summary>
               <div class="table-wrap">
                 <table id="runClosedTable">
                   <thead>
-                    <tr><th>Ticket</th><th>Résumé</th><th>Statut</th><th>Priorité</th><th>Assigné</th><th>Créé le</th><th>Fermé le</th><th>Ouverture → fermeture</th></tr>
+                    <tr><th>Ticket</th><th>Summary</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Closed on</th><th>Created → closed</th></tr>
                   </thead>
                   <tbody></tbody>
                 </table>
               </div>
               <p class="age-legend">
-                <span><i class="age-dot" style="background: var(--good)"></i> moins de 1 jour</span>
-                <span><i class="age-dot" style="background: var(--current-2)"></i> entre 1 et 2 jours</span>
-                <span><i class="age-dot" style="background: var(--bad)"></i> plus de 2 jours</span>
+                <span><i class="age-dot" style="background: var(--good)"></i> less than 1 day</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i> between 1 and 2 days</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i> more than 2 days</span>
               </p>
             </details>
           </div>
 
-          <p class="jql-note">JQL utilisée : <code id="runJqlText"></code></p>
+          <p class="jql-note">JQL used: <code id="runJqlText"></code></p>
         </div><!-- /#runView -->
       </section>
     </main>

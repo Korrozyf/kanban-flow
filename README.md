@@ -1,348 +1,356 @@
-# Kanban Flow — Tableau de bord Scrum Master (JIRA Cloud)
+# Kanban Flow — Kanban facilitator dashboard (JIRA Cloud)
 
-Extension de navigateur (Chrome + Firefox) qui se connecte à **JIRA Cloud** et affiche,
-équipe par équipe, les indicateurs de flux Kanban utiles à l'accompagnement d'un Scrum
-Master : **throughput**, **lead time**, **cycle time** et leurs **tendances**.
+Browser extension (Chrome + Firefox) that connects to **JIRA Cloud** and displays,
+team by team, the Kanban flow metrics useful for a Kanban facilitator: **throughput**,
+**lead time**, **cycle time**, and their **trends**.
 
-## Fonctionnalités
+## About this project
 
-- **Deux types de Kanban par équipe** : chaque projet est configuré en mode **Build**
-  (flux : throughput engagé / réalisé, lead & cycle time, ajouts au board / remises en
-  backlog) ou en mode **Run** (support : tickets ouverts, fermés, créés, temps moyen de
-  résolution, listes non assignés / priorité max). Voir la section « Mode Run » plus bas.
-- **Sélection d'équipe / projet** via un menu déroulant (multi-équipes).
-- **Date de démarrage du macrocycle** (première semaine) configurable : on affiche la
-  semaine en cours + jusqu'à **3 semaines complètes précédentes**, sans jamais remonter
-  avant cette date.
-  - Date dans le futur → message d'erreur et aucun affichage.
-  - Date = semaine en cours → pas de comparaison (aucune semaine complète précédente).
-- **Throughput réalisé** de la semaine en cours (lundi → dimanche) + semaines précédentes
-  (barres). La **semaine en cours (incomplète)** est affichée en **jaune** pour la
-  distinguer nettement des semaines complètes.
-- **Throughput engagé** : nombre de tickets présents dans un **statut du board pendant
-  le créneau « engagé »** (par défaut lundi 0h→12h, **configurable**) — c'est un
-  instantané (snapshot) sur ce créneau, pas un comptage de transitions. Il est affiché
-  **dans le même graphique que le throughput réalisé** (barres groupées : engagé en
-  violet, réalisé en bleu) + carte + tendance.
-- **Code couleur de la semaine en cours** : dans les **graphiques** (barres, courbes)
-  et le tableau de signaux, les données de la **semaine en cours** sont en tons
-  **chauds** — réalisé en **jaune**, engagé en **ambre**, courbes en jaune pointillé —
-  tandis que les **semaines complètes** restent en **bleu / violet**. Sur les
-  **cartes** de haut de page (**build et run**), le chiffre reste en couleur de texte
-  normale (le jaune est réservé aux alertes) : l'appartenance à la semaine en cours
-  est portée par le badge « en cours » et la bordure de la carte.
-- **Story points (option par équipe)** : si l'option *« Suivre les story points »* est
-  activée pour une équipe build, le tableau de bord ajoute une **carte** « Story points
-  livrés » (semaine en cours), un **graphique par semaine** sous le throughput et une
-  **colonne « Story points »** dans la liste des tickets terminés (avant lead / cycle
-  time). Le champ JIRA correspondant est détecté automatiquement, ou forçable dans la
-  configuration.
-- **Mise en page des graphiques (build)** : le throughput occupe toute la largeur ;
-  lead time et cycle time sont côte à côte en dessous.
-- **Liste des tickets terminés cette semaine** : la colonne *Cycle (j)* porte une
-  **pastille colorée + infobulle** — vert ≤ 2 jours, ambre 2–4 jours, rouge > 4 jours.
-- **Signaux de flux par semaine** : nombre de tickets **ajoutés au board** (entrée dans
-  un statut du board **depuis n'importe quel autre statut**) et de tickets **remis en
-  backlog**, comptés pendant le **créneau « ajouts / retraits »** (par défaut lundi 12h →
-  vendredi fin de journée, **configurable**), avec une alerte ⚠ quand il y en a. La
-  semaine en cours est mise en avant (ligne jaune) et une synthèse indique s'il y a eu
-  des ajouts / remises et combien.
-- **Créneaux de comptage configurables** (réglage global) : jour et heures du créneau
-  « engagé » et du créneau « ajouts / retraits ». Les libellés affichés dans le tableau
-  de bord suivent automatiquement les valeurs choisies.
-- **Tendances = semaine en cours comparée à la semaine précédente** (cartes de haut de
-  page, build comme run).
-- **Export / import de la configuration** en JSON (jeton API exclu par défaut) pour ne
-  rien ressaisir après une réinstallation — voir « Mettre à jour l'extension ».
-- **Export du tableau de bord en image** (PNG ou JPG) : bouton `🖼 Exporter l'image`
-  dans la barre du haut. La capture couvre **toute la page** d'indicateurs (pas
-  seulement la zone visible), listes de tickets **dépliées**, avec un en-tête
-  équipe / mode / période / date de génération. Résolution ×2 (lisible en réunion ou
-  dans un compte-rendu). Le fichier est enregistré dans le dossier de téléchargement du
-  navigateur sous `kanban-flow_<équipe>_<date>_<heure>.png|jpg`.
-- **Lead time** par semaine et **cycle time** par semaine (courbes, médiane ou moyenne).
-- **Tendances** (hausse / stable / baisse) de chaque indicateur, avec code couleur :
-  vert = amélioration, rouge = dégradation, bleu = stable.
-- **Statuts configurables par équipe** : vous définissez précisément quels statuts JIRA
-  marquent le *début du travail* (cycle time) et la *fin* (throughput / lead / cycle).
-- Liste repliable des tickets terminés **dans la semaine en cours** + JQL utilisée (transparence des calculs).
-- 100 % local : identifiants et jeton stockés dans le navigateur, aucun serveur tiers.
+Kanban Flow is built and maintained by a Kanban facilitator, not a professional
+software developer. The code is written with the help of an AI coding agent, then
+reviewed and tested by the maintainer against real team needs. Expect pragmatic,
+purpose-built code rather than production-grade engineering: read it, question it, and
+open an issue if something looks wrong.
 
-## Définition des indicateurs
+## Features
 
-Pour chaque ticket terminé dans la fenêtre analysée :
+- **Two Kanban types per team**: each project is configured in **Build** mode
+  (flow: committed / delivered throughput, lead & cycle time, added to board / moved
+  back to backlog) or **Run** mode (support: open, closed, created tickets, average
+  resolution time, unassigned / highest-priority lists). See the "Run mode" section
+  below.
+- **Team / project selection** via a dropdown menu (multi-team).
+- **Macrocycle start date** (first week) configurable: displays the current week plus
+  up to **3 previous completed weeks**, never going back before that date.
+  - Future date → error message, no display.
+  - Date = current week → no comparison (no previous completed week).
+- **Delivered throughput** for the current week (Monday → Sunday) plus previous weeks
+  (bars). The **current (incomplete) week** is shown in **yellow** to clearly
+  distinguish it from completed weeks.
+- **Committed throughput**: number of tickets present in a **board status during the
+  "committed" counting window** (default Monday 00:00→12:00, **configurable**) — this
+  is a snapshot on that window, not a count of transitions. It is shown **on the same
+  chart as delivered throughput** (grouped bars: committed in purple, delivered in
+  blue) + card + trend.
+- **Current-week color code**: in the **charts** (bars, lines) and the flow signals
+  table, current-week data uses **warm** tones — delivered in **yellow**, committed in
+  **amber**, dashed yellow lines — while **completed weeks** stay **blue / purple**. On
+  the top-of-page **cards** (**build and run**), the figure stays in the normal text
+  color (yellow is reserved for alerts): current-week status is conveyed by the
+  "current" badge and the card border.
+- **Story points (per-team option)**: if the *"Track story points"* option is enabled
+  for a build team, the dashboard adds a **card** "Delivered story points" (current
+  week), a **weekly chart** below the throughput, and a **"Story points" column** in
+  the completed tickets list (before lead / cycle time). The corresponding JIRA field
+  is auto-detected, or can be forced in settings.
+- **Chart layout (build)**: the throughput chart spans the full width; lead time and
+  cycle time sit side by side below it.
+- **List of tickets completed this week**: the *Cycle (d)* column has a **colored dot +
+  tooltip** — green ≤ 2 days, amber 2–4 days, red > 4 days.
+- **Weekly flow signals**: number of tickets **added to board** (entering a board
+  status **from any other status**) and tickets **moved back to backlog**, counted
+  during the **"additions / removals" counting window** (default Monday 12:00 → end of
+  Friday, **configurable**), with a ⚠ alert when there are any. The current week is
+  highlighted (yellow row) and a summary shows whether there were additions / removals
+  and how many.
+- **Configurable counting windows** (global setting): day and hours of the "committed"
+  window and the "additions / removals" window. Labels shown in the dashboard follow
+  the chosen values automatically.
+- **Trends = current week compared to previous week** (top-of-page cards, both build
+  and run).
+- **Export / import of settings** as JSON (API token excluded by default) so you don't
+  have to re-enter everything after a reinstall — see "Updating the extension".
+- **Export the dashboard as an image** (PNG or JPG): `🖼 Export image` button in the top
+  bar. The capture covers the **entire metrics page** (not just the visible area),
+  with ticket lists **expanded**, and a header showing team / mode / period /
+  generation date. ×2 resolution (readable in a meeting or report). The file is saved
+  to the browser's download folder as `kanban-flow_<team>_<date>_<time>.png|jpg`.
+- **Lead time** per week and **cycle time** per week (lines, median or average).
+- **Trends** (up / stable / down) for each metric, color-coded: green = improvement,
+  red = degradation, blue = stable.
+- **Per-team configurable statuses**: you define precisely which JIRA statuses mark the
+  *start of work* (cycle time) and the *end* (throughput / lead / cycle).
+- Collapsible list of tickets completed **in the current week** + the JQL used
+  (calculation transparency).
+- 100% local: credentials and token stored in the browser, no third-party server.
 
-| Indicateur   | Calcul |
+## Metric definitions
+
+For each ticket completed in the analyzed window:
+
+| Metric | Calculation |
 |--------------|--------|
-| **Throughput réalisé** | Nombre de tickets entrés dans un statut « Terminé » pendant la semaine (lun→dim). |
-| **Throughput engagé** | Nombre de tickets **dans un statut du board pendant le créneau « engagé »** (par défaut lundi 0h→12h, configurable) — instantané reconstruit depuis l'historique (le ticket compte s'il a été sur le board à un instant quelconque de ce créneau), pas un comptage de transitions. Affiché dans le même graphique que le réalisé. |
-| **Ajoutés au board** | Nombre de tickets **placés dans un statut du board** (depuis n'importe quel autre statut) pendant le **créneau « ajouts / retraits »** (par défaut lundi 12h → vendredi fin de journée, configurable) de la même semaine (ajout de périmètre en cours de semaine). |
-| **Remis en backlog** | Nombre de tickets **placés en statut « Backlog » / « To do »** (depuis n'importe quel autre statut) pendant le même **créneau « ajouts / retraits »** (par défaut lundi 12h → vendredi fin de journée, configurable). |
-| **Story points livrés** | Somme des story points des tickets **terminés pendant la semaine** (option à activer par équipe). Tickets non estimés exclus de la somme. |
-| **Lead time**  | `date de fin − date de création` (jours). |
-| **Cycle time** | `date de fin − 1ʳᵉ entrée dans un statut « En cours »` (jours). |
+| **Delivered throughput** | Number of tickets entering a "Done" status during the week (Mon→Sun). |
+| **Committed throughput** | Number of tickets **in a board status during the "committed" counting window** (default Monday 00:00→12:00, configurable) — a snapshot reconstructed from history (the ticket counts if it was on the board at any point during that window), not a count of transitions. Shown on the same chart as delivered. |
+| **Added to board** | Number of tickets **placed in a board status** (from any other status) during the **"additions / removals" counting window** (default Monday 12:00 → end of Friday, configurable) of the same week (scope added mid-week). |
+| **Moved back to backlog** | Number of tickets **placed in a "Backlog" / "To do" status** (from any other status) during the same **"additions / removals" counting window** (default Monday 12:00 → end of Friday, configurable). |
+| **Delivered story points** | Sum of story points of tickets **completed during the week** (per-team option to enable). Unestimated tickets excluded from the sum. |
+| **Lead time**  | `end date − creation date` (days). |
+| **Cycle time** | `end date − 1st entry into an "In progress" status` (days). |
 
-- **Date de fin** = dernière transition vers un de vos statuts « Terminé ».
-- **Date de début** = première transition vers un de vos statuts « En cours »
-  (si aucune, le cycle time est approximé sur la création — signalé par `*`).
-- **Bornage au macrocycle** : si la date de création (lead time) ou la 1ʳᵉ mise en
-  cours (cycle time) est **antérieure à la date de démarrage du macrocycle**, on
-  utilise cette date de démarrage à la place. Le temps écoulé avant le début du
-  macrocycle n'est donc jamais compté.
-- L'agrégation hebdomadaire est la **médiane** par défaut (plus robuste aux valeurs
-  extrêmes), configurable en moyenne.
-- **Tendance** = comparaison de la semaine en cours à la semaine précédente ; en-deçà
-  du seuil « stable » (10 % par défaut), la tendance est considérée stable.
+- **End date** = last transition into one of your "Done" statuses.
+- **Start date** = first transition into one of your "In progress" statuses
+  (if none, cycle time is approximated on the creation date — flagged with `*`).
+- **Bounded to the macrocycle**: if the creation date (lead time) or the first entry
+  into "in progress" (cycle time) is **earlier than the macrocycle start date**, that
+  start date is used instead. Time elapsed before the start of the macrocycle is
+  therefore never counted.
+- Weekly aggregation is the **median** by default (more robust to outliers),
+  configurable to average.
+- **Trend** = comparison of the current week to the previous week; below the
+  "stable" threshold (10% by default), the trend is considered stable.
 
-## Mode Run (Kanban de support / run)
+## Run mode (support / run Kanban)
 
-Pour un projet configuré en **mode Run**, on n'analyse pas le flux de livraison mais la
-gestion d'un flux de tickets de support. Les tickets concernés sont identifiés par un ou
-plusieurs **labels** (configurables par équipe). Semaines du **lundi 00:00 au dimanche
-23:59** ; dans les graphiques la semaine en cours est en tons chauds. Comme en mode
-build, les **cartes** de haut de page affichent leur chiffre en couleur de texte
-normale, avec le badge « en cours » et la bordure de carte pour marquer la semaine
-courante. Indicateurs :
+For a project configured in **Run mode**, the analysis is not delivery flow but the
+management of a support ticket flow. Relevant tickets are identified by one or more
+**labels** (configurable per team). Weeks run **Monday 00:00 to Sunday 23:59**; in
+charts the current week uses warm tones. As in build mode, the top-of-page **cards**
+show their figure in normal text color, with the "current" badge and card border
+marking the current week. Metrics:
 
-| Indicateur | Calcul |
+| Metric | Calculation |
 |------------|--------|
-| **Tickets ouverts** | Nombre de tickets dont la **date de création** tombe dans la semaine considérée (quel que soit leur statut) + deux **listes** : « **ouverts dans le board** » (statut hors backlog) et « **ouverts non planifiés (backlog)** » (statut listé dans les *Statuts « Backlog » du run*). Les deux listes ont la même structure : lien JIRA, priorité, assigné, **temps depuis l'ouverture** et **temps depuis la dernière action** — signalés par une **pastille de couleur** (vert 0–1 j, ambre 1–2 j, rouge > 2 j) avec infobulle. Un ticket **résolu** ou dans l'un des **statuts de fermeture** configurés n'apparaît dans aucune des deux. La **carte KPI** compte l'ensemble des ouverts (board + backlog). |
-| **Tickets fermés** *(stat équivalente aux ouverts)* | Nombre de tickets dont la **date de fermeture** (date d’entrée dans le statut de fermeture lue dans le changelog, ou date de résolution) tombe dans la semaine considérée + **liste** des tickets **fermés pendant la semaine en cours** (lien JIRA, date de création, date de fermeture et durée **ouverture → fermeture** avec le même code couleur). Affiché **sur le même graphique** que les ouverts (barres groupées). La carte de haut de page compte les fermetures **de la semaine en cours**, comparées aux fermetures de la semaine précédente **sur la même durée écoulée** (ex. mardi 14h → du lundi 00:00 au mardi 14h de la semaine précédente). |
-| **Tickets créés par jour** | Graphique des créations **par jour de la semaine** : semaine en cours comparée à la semaine précédente. Les jours ouvrés (lun→ven) sont toujours affichés ; **samedi et dimanche n'apparaissent que s'ils portent au moins une création** (semaine en cours ou précédente). |
-| **Tickets créés** | Nombre de tickets **créés pendant la semaine en cours**, comparé aux créations de la semaine précédente sur la **même durée écoulée** (ex. mardi 14h → du lundi 00:00 au mardi 14h de la semaine précédente). La note affiche aussi le total de la semaine précédente entière. |
-| **Temps moyen de résolution** | Moyenne du délai `création → fermeture` des tickets **fermés pendant la semaine en cours**. Pastille de couleur selon les mêmes seuils que les listes (vert ≤ 1 j, ambre ≤ 2 j, rouge > 2 j) ; tendance comparée à la moyenne de la semaine précédente sur la **même durée écoulée** (plus court = meilleur). |
-| **Non assignés** | **Liste** (instantané actuel) des tickets ouverts **sans assigné**, avec lien vers leur page JIRA. |
-| **Priorité maximale** | **Liste** (instantané) des tickets dont la priorité fait partie des valeurs « max » configurées, triée par **priorité décroissante puis création croissante**, avec **date de création**, **délai création → premier commentaire** et **délai création → résolution**. Ces deux délais utilisent le même code couleur que les compteurs d'ancienneté (pastille verte ≤ 1 j, ambre ≤ 2 j, rouge > 2 j). |
+| **Open tickets** | Number of tickets whose **creation date** falls in the week under consideration (regardless of status) + two **lists**: "**open tickets on the board**" (non-backlog status) and "**unplanned open tickets (backlog)**" (status listed in the *run "Backlog" statuses*). Both lists share the same structure: JIRA link, priority, assignee, **age since created** and **since last activity** — flagged with a **colored dot** (green 0–1 d, amber 1–2 d, red > 2 d) with a tooltip. A **resolved** ticket or one in a configured **closing status** appears in neither list. The **KPI card** counts all open tickets (board + backlog). |
+| **Closed tickets** *(mirrors the open-tickets stat)* | Number of tickets whose **closing date** (date of entry into the closing status read from the changelog, or resolution date) falls in the week under consideration + a **list** of tickets **closed during the current week** (JIRA link, creation date, closing date, and **created → closed** duration with the same color code). Shown **on the same chart** as open tickets (grouped bars). The top-of-page card counts closures **for the current week**, compared to the previous week's closures **over the same elapsed duration** (e.g. Tuesday 14:00 → from Monday 00:00 to Tuesday 14:00 of the previous week). |
+| **Tickets created per day** | Chart of creations **per day of the week**: current week compared to the previous week. Working days (Mon→Fri) are always shown; **Saturday and Sunday appear only if they have at least one creation** (current or previous week). |
+| **Created tickets** | Number of tickets **created during the current week**, compared to the previous week's creations over the **same elapsed duration** (e.g. Tuesday 14:00 → from Monday 00:00 to Tuesday 14:00 of the previous week). The note also shows the full previous week's total. |
+| **Average resolution time** | Average of the `created → closed` delay for tickets **closed during the current week**. Colored dot using the same thresholds as the lists (green ≤ 1 d, amber ≤ 2 d, red > 2 d); trend compared to the previous week's average over the **same elapsed duration** (shorter = better). |
+| **Unassigned** | **List** (current snapshot) of open tickets **with no assignee**, with a link to their JIRA page. |
+| **Highest priority** | **List** (snapshot) of tickets whose priority is among the configured "highest" values, sorted by **priority descending then creation ascending**, with **creation date**, **created → first comment delay**, and **created → resolved delay**. Both delays use the same color code as the age counters (green dot ≤ 1 d, amber ≤ 2 d, red > 2 d). |
 
-- Les priorités « max » sont configurables par équipe (ex. `Highest, Blocker`).
-- Les **statuts de fermeture** (ex. `Done, Closed, Résolu`) sont configurables par équipe : un ticket qui s'y trouve est exclu des indicateurs, comme un ticket résolu.
-- La **date de fermeture** est lue dans le **changelog** (dernière entrée dans un statut de fermeture) ; à défaut la date de résolution ; en dernier recours « maintenant », signalé par un `~` dans la colonne « Fermé le ». C'est ce qui permet de dater correctement un ticket clos sans résolution (ex. `Cancelled`).
-- Les **statuts « Backlog » du run** sont également configurables : ils distinguent les tickets ouverts **non planifiés** de ceux **pris en charge sur le board**.
-- Les tendances comparent la **semaine en cours** à la **semaine précédente** (cartes de haut de page, build comme run). La carte « Tickets ouverts » du run compare le **stock actuel** au stock encore ouvert **à la fin de la semaine précédente**.
-- **Aucun cumul entre semaines** : chaque indicateur hebdomadaire ne compte que les éléments dont l'événement de référence (création, fermeture, transition, fin de ticket) tombe dans les bornes `[lundi 00:00, lundi suivant 00:00[` de la semaine concernée.
-- Le premier commentaire est lu via `GET /rest/api/3/issue/{clé}/comment` (trié par date).
+- "Highest" priorities are configurable per team (e.g. `Highest, Blocker`).
+- **Closing statuses** (e.g. `Done, Closed, Resolved`) are configurable per team: a
+  ticket in one of them is excluded from the metrics, like a resolved ticket.
+- The **closing date** is read from the **changelog** (last entry into a closing
+  status); failing that, the resolution date; as a last resort, "now", flagged with a
+  `~` in the "Closed on" column. This is what makes it possible to correctly date a
+  ticket closed without a resolution (e.g. `Cancelled`).
+- The **run "Backlog" statuses** are also configurable: they distinguish **unplanned**
+  open tickets from those **taken on the board**.
+- Trends compare the **current week** to the **previous week** (top-of-page cards, both
+  build and run). The run's "Open tickets" card compares the **current stock** to the
+  stock still open **at the end of the previous week**.
+- **No carry-over between weeks**: each weekly metric only counts items whose reference
+  event (creation, closing, transition, ticket end) falls within the
+  `[Monday 00:00, next Monday 00:00[` bounds of the relevant week.
+- The first comment is read via `GET /rest/api/3/issue/{key}/comment` (sorted by date).
 
-### Exclusivité des comptages
+### Exclusivity of counts
 
-Règle générale : **un ticket compté sur une semaine (ou un jour) ne peut pas être compté
-ailleurs pour le même indicateur.** Chaque élément est rattaché à **une seule** semaine,
-celle qui contient son *événement de référence* :
+General rule: **a ticket counted in one week (or day) cannot be counted elsewhere for
+the same metric.** Each item is attached to **exactly one** week, the one containing
+its *reference event*:
 
-| Indicateur | Événement de référence |
+| Metric | Reference event |
 | --- | --- |
-| Throughput réalisé, story points, lead time, cycle time | date de **fin** du ticket |
-| Ajouts au board, remises en backlog | date de la **transition** de statut |
-| Tickets ouverts (par semaine, run) | date de **création** |
-| Tickets fermés, temps moyen de résolution (run) | date de **fermeture** |
-| Créations par jour (run) | date de **création**, rattachée à un seul jour |
+| Delivered throughput, story points, lead time, cycle time | ticket **end** date |
+| Additions to board, moves back to backlog | status **transition** date |
+| Open tickets (per week, run) | **creation** date |
+| Closed tickets, average resolution time (run) | **closing** date |
+| Creations per day (run) | **creation** date, attached to a single day |
 
-Les bornes sont **semi-ouvertes** : `[lundi 00:00, lundi suivant 00:00[`. Un ticket terminé
-le lundi à 00:00 pile appartient à la semaine qui **commence**, jamais à celle qui finit.
-Les semaines sont contiguës : ni trou, ni chevauchement. Les découpages en jours et les
-créneaux configurables sont calculés en **jours calendaires**, pas en tranches de 24 h :
-les semaines de changement d'heure (167 h ou 169 h) ne provoquent donc ni double comptage
-ni heure perdue.
+Bounds are **half-open**: `[Monday 00:00, next Monday 00:00[`. A ticket completed on
+Monday at exactly 00:00 belongs to the week that **starts**, never the one that ends.
+Weeks are contiguous: no gap, no overlap. Day splits and configurable windows are
+computed in **calendar days**, not 24-hour slices: weeks with a daylight-saving time
+change (167 h or 169 h) therefore cause neither double counting nor a lost hour.
 
-Trois indicateurs ne sont **volontairement pas** exclusifs, parce qu'ils mesurent un
-**stock** ou des **transitions**, pas un flux de tickets :
+Three metrics are **deliberately not** exclusive, because they measure a **stock** or
+**transitions**, not a ticket flow:
 
-- **Throughput engagé** — photo du board au créneau du lundi. Un ticket resté sur le board
-  trois semaines est compté les trois semaines : c'est la question posée (« combien de
-  tickets étaient engagés ce lundi ? »).
-- **Tickets ouverts (carte du haut, run)** — stock actuel de tickets non résolus, comparé au
-  stock encore ouvert à la fin de la semaine précédente.
-- **Ajouts au board / remises en backlog** — on compte des *transitions*. Un ticket qui fait
-  l'aller-retour dans la même semaine est compté des deux côtés : c'est le signal de churn
-  recherché.
+- **Committed throughput** — a snapshot of the board at the Monday window. A ticket
+  that stays on the board for three weeks is counted in all three weeks: that's the
+  question being asked ("how many tickets were committed this Monday?").
+- **Open tickets (top card, run)** — current stock of unresolved tickets, compared to
+  the stock still open at the end of the previous week.
+- **Additions to board / moves back to backlog** — these count *transitions*. A ticket
+  that goes back and forth in the same week is counted on both sides: that's the churn
+  signal being sought.
 
-À cela s'ajoutent les **bases de comparaison « à durée écoulée égale »** (fermés, créations,
-temps moyen de résolution) : elles portent sur la semaine précédente tronquée à la même
-durée écoulée, et ne sont pas des indicateurs hebdomadaires mais des points de repère.
+In addition, the **"same elapsed duration" comparison bases** (closed, created, average
+resolution time) apply to the previous week truncated to the same elapsed duration, and
+are not weekly metrics but reference points.
 
 ## Installation
 
-Les paquets prêts à installer sont publiés dans les **[Releases](../../releases)** du
-dépôt : `kanban-flow-<version>.zip` pour Chrome/Edge, `kanban-flow-<version>.xpi` pour
-Firefox. Guide pas à pas destiné aux utilisateurs :
+Ready-to-install packages are published in the repository's
+**[Releases](../../releases)**: `kanban-flow-<version>.zip` for Chrome/Edge,
+`kanban-flow-<version>.xpi` for Firefox. Step-by-step user guide:
 **[docs/INSTALLATION.md](docs/INSTALLATION.md)**.
 
 ### Chrome / Edge / Chromium
-1. Décompressez le `.zip` dans un dossier que vous conservez (ou clonez le dépôt).
+1. Unzip the `.zip` into a folder you keep (or clone the repository).
 2. `chrome://extensions/`
-3. Activez le **Mode développeur** (en haut à droite).
-4. **Charger l'extension non empaquetée** → sélectionnez ce dossier.
-5. Cliquez sur l'icône 📊 pour ouvrir le tableau de bord.
+3. Enable **Developer mode** (top right).
+4. **Load unpacked** → select this folder.
+5. Click the 📊 icon to open the dashboard.
 
 ### Firefox (121+)
 1. `about:debugging#/runtime/this-firefox`
-2. **Charger un module complémentaire temporaire…** → sélectionnez le fichier
-   `manifest.json` du dossier (ou le `.xpi`).
-3. Cliquez sur l'icône 📊.
+2. **Load Temporary Add-on…** → select the folder's `manifest.json` file (or the
+   `.xpi`).
+3. Click the 📊 icon.
 
-> Chargement temporaire = effacé au redémarrage de Firefox. Pour une installation
-> permanente **et une mise à jour automatique**, l'extension doit être signée par Mozilla
-> (AMO, gratuit) — procédure dans [docs/PUBLICATION.md](docs/PUBLICATION.md).
+> Temporary loading = wiped on Firefox restart. For a permanent installation **with
+> automatic updates**, the extension must be signed by Mozilla (AMO, free) — procedure
+> in [docs/PUBLICATION.md](docs/PUBLICATION.md).
 
-### Construire les paquets soi-même
+### Building the packages yourself
 
 ```bash
-./tools/build.sh      # → dist/kanban-flow-<version>.zip et .xpi
+./tools/build.sh      # → dist/kanban-flow-<version>.zip and .xpi
 ```
 
-La version est lue dans `manifest.json`. Pousser une étiquette `vX.Y.Z` déclenche le
-workflow GitHub Actions qui construit les paquets et crée la release avec les notes du
-`CHANGELOG.md` (voir [docs/PUBLICATION.md](docs/PUBLICATION.md)).
+The version is read from `manifest.json`. Pushing a `vX.Y.Z` tag triggers the GitHub
+Actions workflow that builds the packages and creates the release with notes from
+`CHANGELOG.md` (see [docs/PUBLICATION.md](docs/PUBLICATION.md)).
 
-## Mettre à jour l'extension sans rien ressaisir
+## Updating the extension without re-entering anything
 
-La configuration (connexion JIRA, équipes, statuts) est stockée **dans le navigateur**
-via `chrome.storage.local`. Elle est perdue si l'extension est supprimée puis
-réinstallée — et systématiquement sur un **module temporaire Firefox**, effacé à
-chaque redémarrage. D'où l'export/import.
+Settings (JIRA connection, teams, statuses) are stored **in the browser** via
+`chrome.storage.local`. They are lost if the extension is removed and reinstalled —
+and always on a **temporary Firefox add-on**, wiped on every restart. Hence the
+export/import feature.
 
-### Procédure de mise à jour
-1. ⚙ Configuration → section **4. Sauvegarde de la configuration** → **⬇ Exporter la
-   configuration** → un fichier `kanban-flow-config_AAAA-MM-JJ.json` est téléchargé.
-2. Installez la nouvelle version (Chrome : *Recharger* suffit si le dossier est le même,
-   la config est alors conservée ; Firefox temporaire : rechargez le module).
-3. ⚙ Configuration → **⬆ Importer une configuration** → sélectionnez le fichier.
-   La config est appliquée **et enregistrée** immédiatement.
+### Update procedure
+1. ⚙ Settings → section **4. Settings backup** → **⬇ Export settings** → a
+   `kanban-flow-config_YYYY-MM-DD.json` file is downloaded.
+2. Install the new version (Chrome: *Reload* is enough if it's the same folder, and
+   settings are preserved; temporary Firefox: reload the add-on).
+3. ⚙ Settings → **⬆ Import settings** → select the file. Settings are applied **and
+   saved** immediately.
 
-### À propos du jeton API
-- Il n'est **pas** exporté par défaut (c'est un secret équivalent à un mot de passe).
-  Cochez « Inclure le jeton API dans l'export » si vous voulez un fichier autonome —
-  dans ce cas, traitez le fichier comme un mot de passe.
-- À l'import, un fichier **sans** jeton ne supprime jamais celui déjà enregistré :
-  vous ne le ressaisissez que si l'extension a réellement été réinstallée à neuf.
+### About the API token
+- It is **not** exported by default (it's a secret equivalent to a password). Check
+  "Include the API token in the export" if you want a self-contained file — in that
+  case, treat the file like a password.
+- On import, a file **without** a token never removes the one already saved: you only
+  have to re-enter it if the extension was actually freshly reinstalled.
 
-### Partager la config à un collègue
-Exportez **sans** le jeton et transmettez le fichier : votre collègue importe, ajoute
-son propre e-mail et son propre jeton API, et démarre avec les mêmes équipes, statuts
-et réglages. Le format est validé à l'import (`app`, `formatVersion`), les statuts sont
-nettoyés et un fichier étranger ou corrompu est refusé avec un message explicite.
+### Sharing settings with a colleague
+Export **without** the token and send the file: your colleague imports it, adds their
+own email and their own API token, and starts with the same teams, statuses, and
+settings. The file format is validated on import (`app`, `formatVersion`), statuses are
+cleaned up, and a foreign or corrupted file is rejected with a clear message.
 
-## Obtenir un jeton API JIRA Cloud
+## Getting a JIRA Cloud API token
 
-L'extension s'authentifie auprès de JIRA Cloud en **Basic Auth** : votre e-mail
-Atlassian + un **jeton API** (API token). Le jeton remplace le mot de passe (les
-mots de passe de compte ne sont pas acceptés par l'API REST de JIRA Cloud) et ne
-transite jamais par un serveur tiers : il est stocké uniquement dans le navigateur.
+The extension authenticates to JIRA Cloud using **Basic Auth**: your Atlassian email +
+an **API token**. The token replaces the password (account passwords are not accepted
+by the JIRA Cloud REST API) and never goes through a third-party server: it is stored
+only in the browser.
 
-Marche à suivre (~1 minute) :
+Steps (~1 minute):
 
-1. Connectez-vous à votre compte Atlassian, puis ouvrez la page de gestion des jetons :
+1. Log in to your Atlassian account, then open the token management page:
    **<https://id.atlassian.com/manage-profile/security/api-tokens>**
-   (ou : avatar en haut à droite de JIRA → **Gérer le compte / Manage account** →
-   onglet **Sécurité / Security** → **Créer et gérer les jetons API / Create and
-   manage API tokens**).
-2. Cliquez sur **Créer un jeton API / Create API token**.
-3. Donnez-lui un **libellé** explicite (ex. `Kanban Flow – dashboard Scrum Master`).
-   Si un choix de type est proposé, prenez un jeton **classique** (sans portée /
-   *scopes*) ; définissez éventuellement une date d'expiration.
-4. Cliquez **Créer / Create**, puis **Copier / Copy** : le jeton n'est affiché
-   **qu'une seule fois**. Conservez-le le temps de le coller dans l'extension.
-5. Notez aussi :
-   - l'**URL de votre site** JIRA : `https://votre-domaine.atlassian.net` ;
-   - l'**e-mail** du compte Atlassian associé au jeton.
+   (or: avatar top right of JIRA → **Manage account** → **Security** tab → **Create
+   and manage API tokens**).
+2. Click **Create API token**.
+3. Give it a clear **label** (e.g. `Kanban Flow – Kanban facilitator dashboard`). If a
+   type choice is offered, pick a **classic** token (no *scopes*); optionally set an
+   expiration date.
+4. Click **Create**, then **Copy**: the token is shown **only once**. Keep it handy
+   long enough to paste it into the extension.
+5. Also note:
+   - your JIRA **site URL**: `https://your-domain.atlassian.net`;
+   - the **email** of the Atlassian account associated with the token.
 
-> Sécurité : traitez ce jeton comme un mot de passe. Vous pouvez le **révoquer** à
-> tout moment depuis la même page si besoin. Les droits du jeton sont ceux de votre
-> compte : vous devez avoir accès en lecture aux projets de vos équipes.
+> Security: treat this token like a password. You can **revoke** it at any time from
+> the same page if needed. The token's permissions are those of your account: you need
+> read access to your teams' projects.
 
 ## Configuration
 
-1. Ouvrez ⚙ **Configuration** (bouton dans le tableau de bord).
-2. **Connexion JIRA Cloud** :
-   - URL du site : `https://votre-domaine.atlassian.net`
-   - E-mail Atlassian (celui du compte ayant créé le jeton)
-   - Jeton API : celui obtenu à la section **« Obtenir un jeton API JIRA Cloud »**
-     ci-dessus (<https://id.atlassian.com/manage-profile/security/api-tokens>)
-   - Cliquez **Tester la connexion**.
-3. **Réglages des indicateurs** : date de démarrage du macrocycle, agrégation
-   (médiane/moyenne), seuil de stabilité, **champ JIRA des story points** (optionnel,
-   vide = détection automatique) et **créneaux de comptage du mode Build** (créneau
-   « engagé » et créneau « ajouts / retraits » : jour + heures).
-4. **Équipes / Projets** : pour chacune de vos 2 équipes, saisissez le nom, la clé de
-   projet JIRA, et les **statuts exacts** de votre workflow (séparés par des virgules,
-   casse ignorée) :
-   - **Type de Kanban** : **Build** ou **Run** ;
-   - En mode **Build** : « En cours » (début du cycle time) et « Terminé » (throughput
-     réalisé / lead / cycle) ; « Statuts du board » (throughput engagé / ajouts au board) et
-     « Backlog » (remises en backlog). Les statuts du board / Backlog sont optionnels :
-     sans eux, le throughput engagé et les signaux de flux ne sont pas affichés.
-     Case « **Suivre les story points de cette équipe** » pour activer la carte, le
-     graphique et la colonne de story points.
-   - En mode **Run** : les **labels** identifiant les tickets de run, la/les
-     **priorité(s) maximale(s)** (ex. `Highest, Blocker`), les **statuts de
-     fermeture** (ex. `Done, Closed`) pour exclure les tickets clos des stats, et les
-     **statuts « Backlog » du run** (tickets ouverts non planifiés).
-5. **Enregistrer**, puis retournez au tableau de bord et choisissez une équipe.
-6. **Sauvegarde de la configuration** : exportez-la dans un fichier JSON (voir
-   « Mettre à jour l'extension sans rien ressaisir ») — à faire dès que la config est
-   au point, et avant chaque mise à jour.
+1. Open ⚙ **Settings** (button in the dashboard).
+2. **JIRA Cloud connection**:
+   - Site URL: `https://your-domain.atlassian.net`
+   - Atlassian email (the one for the account that created the token)
+   - API token: the one obtained in the **"Getting a JIRA Cloud API token"** section
+     above (<https://id.atlassian.com/manage-profile/security/api-tokens>)
+   - Click **Test connection**.
+3. **Metric settings**: macrocycle start date, aggregation (median/average), stability
+   threshold, **JIRA story points field** (optional, empty = auto-detect), and **Build
+   mode counting windows** ("committed" window and "additions / removals" window: day +
+   hours).
+4. **Teams / Projects**: for each of your teams, enter the name, the JIRA project key,
+   and the **exact statuses** of your workflow (comma-separated, case-insensitive):
+   - **Kanban type**: **Build** or **Run**;
+   - In **Build** mode: "In progress" (start of cycle time) and "Done" (delivered
+     throughput / lead / cycle); "Board statuses" (committed throughput / additions to
+     board) and "Backlog" (moves back to backlog). Board / Backlog statuses are
+     optional: without them, committed throughput and flow signals are not shown.
+     Check the box **"Track story points for this team"** to enable the card, chart,
+     and story points column.
+   - In **Run** mode: the **labels** identifying run tickets, the **"highest"
+     priority/priorities** (e.g. `Highest, Blocker`), the **closing statuses** (e.g.
+     `Done, Closed`) to exclude closed tickets from the stats, and the **run "Backlog"
+     statuses** (unplanned open tickets).
+5. **Save**, then go back to the dashboard and choose a team.
+6. **Settings backup**: export it to a JSON file (see "Updating the extension without
+   re-entering anything") — do this as soon as settings are finalized, and before every
+   update.
 
-## Détails techniques
+## Technical details
 
-- Manifest V3, compatible Chrome et Firefox (`background.service_worker` /
+- Manifest V3, compatible with Chrome and Firefox (`background.service_worker` /
   `background.scripts`).
-- API JIRA : endpoint moderne `POST /rest/api/3/search/jql` (pagination
-  `nextPageToken`), + `/rest/api/3/issue/{key}/changelog` en repli si le changelog est
-  tronqué, `GET /rest/api/3/priority` (ordre des priorités du site),
-  `GET /rest/api/3/field` (détection du champ story points) et
-  `GET /rest/api/3/issue/{key}/comment` (premier commentaire, mode Run).
-  Authentification **Basic** (e-mail + jeton API).
-- Les requêtes cross-origin vers `*.atlassian.net` passent grâce aux
-  `host_permissions` de l'extension (contournement propre du CORS, impossible pour une
-  simple page web).
-- Graphiques SVG maison, **aucun appel réseau à un tiers**.
-- Export image : `html2canvas` 1.4.1 (MIT) **vendorisé** dans
-  `lib/html2canvas.min.js` — la rasterisation est 100 % locale, aucune donnée ne quitte
-  le navigateur. Avant la capture, `lib/export-image.js` recopie en attributs inline les
-  styles calculés des `<svg>` (nos barres tirent leur couleur de classes CSS, or
-  html2canvas sérialise chaque SVG sans la feuille de style) puis restaure l'état
-  initial ; les `<details>` repliés sont ouverts le temps de la capture. Le
-  téléchargement passe par un `Blob` + lien `download` : **aucune permission
-  supplémentaire** n'est requise.
-- Permissions demandées : `storage` uniquement + host `https://*.atlassian.net/*`.
+- JIRA API: modern endpoint `POST /rest/api/3/search/jql` (`nextPageToken` pagination),
+  + `/rest/api/3/issue/{key}/changelog` as a fallback if the changelog is truncated,
+  `GET /rest/api/3/priority` (site priority order), `GET /rest/api/3/field` (story
+  points field detection), and `GET /rest/api/3/issue/{key}/comment` (first comment,
+  Run mode). **Basic** authentication (email + API token).
+- Cross-origin requests to `*.atlassian.net` work thanks to the extension's
+  `host_permissions` (a clean CORS workaround, impossible for a plain web page).
+- Homegrown SVG charts, **no third-party network calls**.
+- Image export: `html2canvas` 1.4.1 (MIT) **vendored** in `lib/html2canvas.min.js` —
+  rasterization is 100% local, no data leaves the browser. Before capture,
+  `lib/export-image.js` copies the computed styles of `<svg>` elements into inline
+  attributes (our bars get their color from CSS classes, but html2canvas serializes
+  each SVG without the stylesheet), then restores the original state; collapsed
+  `<details>` are opened for the duration of the capture. The download uses a `Blob` +
+  a `download` link: **no additional permission** is required.
+- Requested permissions: `storage` only + host `https://*.atlassian.net/*`.
 
 ## Structure
 
 ```
 jira-kanban-dashboard/
 ├── manifest.json
-├── background.js          # ouvre/refocalise l'onglet du dashboard
+├── background.js          # opens/refocuses the dashboard tab
 ├── dashboard.html/.css/.js
-├── options.html/.css/.js  # configuration (connexion, réglages, équipes)
+├── options.html/.css/.js  # settings (connection, preferences, teams)
 ├── lib/
-│   ├── store.js           # config dans chrome.storage.local + export/import JSON
-│   ├── jira.js            # client REST JIRA Cloud
-│   ├── metrics.js         # moteur build (throughput/lead/cycle/signaux/story points)
-│   │                     # + moteur run (ouverts/fermés/créés/résolution), semaines lun→dim
-│   ├── charts.js          # graphiques SVG
-│   ├── export-image.js    # capture de la page en PNG/JPG (inline des styles SVG)
-│   └── html2canvas.min.js # html2canvas 1.4.1 (MIT), vendorisé — rasterisation locale
+│   ├── store.js           # config in chrome.storage.local + JSON export/import
+│   ├── jira.js            # JIRA Cloud REST client
+│   ├── metrics.js         # build engine (throughput/lead/cycle/signals/story points)
+│   │                     # + run engine (open/closed/created/resolution), Mon→Sun weeks
+│   ├── charts.js          # SVG charts
+│   ├── export-image.js    # captures the page as PNG/JPG (inlines SVG styles)
+│   └── html2canvas.min.js # html2canvas 1.4.1 (MIT), vendored — local rasterization
 ├── icons/
 ├── tools/
-│   └── build.sh           # construit dist/*.zip (Chrome) et dist/*.xpi (Firefox)
+│   └── build.sh           # builds dist/*.zip (Chrome) and dist/*.xpi (Firefox)
 ├── docs/
-│   ├── INSTALLATION.md    # guide utilisateur : installer, configurer, mettre à jour
-│   ├── PUBLICATION.md     # guide mainteneur : releases + options d'auto-update
-│   └── updates.json       # modèle de manifeste de mise à jour Firefox (auto-hébergé)
+│   ├── INSTALLATION.md    # user guide: install, configure, update
+│   ├── PUBLICATION.md     # maintainer guide: releases + auto-update options
+│   └── updates.json       # Firefox self-hosted update manifest template
 ├── .github/workflows/
-│   └── release.yml        # build + release GitHub sur étiquette vX.Y.Z
-├── CHANGELOG.md           # journal des versions (semver)
+│   └── release.yml        # build + GitHub release on vX.Y.Z tag
+├── CHANGELOG.md           # version log (semver)
 ├── LICENSE                # MIT
-├── THIRD-PARTY.md         # bibliothèques tierces embarquées
+├── THIRD-PARTY.md         # embedded third-party libraries
 └── README.md
 ```
 
-## Licence
+## License
 
-[MIT](LICENSE). Bibliothèques tierces embarquées : voir [THIRD-PARTY.md](THIRD-PARTY.md) (html2canvas 1.4.1, MIT, © Niklas von Hertzen).
+[MIT](LICENSE). Embedded third-party libraries: see
+[THIRD-PARTY.md](THIRD-PARTY.md) (html2canvas 1.4.1, MIT, © Niklas von Hertzen).
 
-## Contribuer / signaler un problème
+## Contributing / reporting an issue
 
-Ouvrez une **Issue** sur le dépôt en précisant le navigateur, la version de l'extension
-(visible dans `chrome://extensions`) et le message d'erreur exact.
-**Ne collez jamais votre jeton API JIRA** dans une issue ou un export de configuration
-partagé.
+Open an **Issue** on the repository, specifying the browser, the extension version
+(visible in `chrome://extensions`), and the exact error message.
+**Never paste your JIRA API token** into an issue or a shared settings export.

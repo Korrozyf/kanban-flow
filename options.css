@@ -97,11 +97,11 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
   .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
 }
 
-/* Affichage conditionnel des champs selon le mode Build / Run */
+/* Conditional display of fields depending on Build / Run mode */
 .project[data-mode="build"] .mode-run { display: none; }
 .project[data-mode="run"] .mode-build { display: none; }
 
-/* Case à cocher alignée avec son libellé (export/import de la config) */
+/* Checkbox aligned with its label (settings export/import) */
 label.inline {
   display: flex;
   align-items: center;

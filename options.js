@@ -1,4 +1,4 @@
-/* Kanban Flow — page de configuration */
+/* Kanban Flow — settings page */
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
@@ -68,9 +68,9 @@
         trackStoryPoints: row.querySelector(".p-storypoints").checked,
         extraJql: row.querySelector(".p-jql").value.trim(),
         inProgressStatuses: parseList(row.querySelector(".p-wip").value),
-        // Statuts de fermeture : champ commun aux deux modes (le mode build le
-        // saisit dans .p-done, le mode run dans .p-done-run). On prend celui
-        // qui est renseigné selon le mode actif, avec repli sur l'autre.
+        // Closing statuses: field shared by both modes (build mode enters it
+        // in .p-done, run mode in .p-done-run). We take the one filled in for
+        // the active mode, falling back to the other.
         doneStatuses: (function () {
           const build = parseList(row.querySelector(".p-done").value);
           const run = parseList(row.querySelector(".p-done-run").value);
@@ -80,8 +80,8 @@
           return build.length ? build : run;
         })(),
         readyStatuses: parseList(row.querySelector(".p-ready").value),
-        // Statuts backlog : champ commun aux deux modes (build = .p-backlog,
-        // run = .p-backlog-run). On prend celui du mode actif, repli sur l'autre.
+        // Backlog statuses: field shared by both modes (build = .p-backlog,
+        // run = .p-backlog-run). We take the one for the active mode, falling back to the other.
         backlogStatuses: (function () {
           const build = parseList(row.querySelector(".p-backlog").value);
           const run = parseList(row.querySelector(".p-backlog-run").value);
@@ -98,7 +98,7 @@
   }
 
   const WEEK_DAYS = [
-    "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche",
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
   ];
 
   function fillDaySelects() {
@@ -137,24 +137,24 @@
   async function testConnection() {
     const res = $("testResult");
     res.className = "test-result";
-    res.textContent = "Test en cours…";
+    res.textContent = "Testing…";
     const cfg = collectConfig();
     if (!cfg.baseUrl || !cfg.email || !cfg.token) {
       res.className = "test-result err";
-      res.textContent = "Renseignez URL, e-mail et jeton d'abord.";
+      res.textContent = "Fill in the URL, e-mail and token first.";
       return;
     }
     try {
       const client = JKDJira.makeClient(cfg);
       const me = await client.testConnection();
       res.className = "test-result ok";
-      res.textContent = `✓ Connecté en tant que ${me.displayName || me.emailAddress || "utilisateur"}.`;
+      res.textContent = `✓ Connected as ${me.displayName || me.emailAddress || "user"}.`;
     } catch (e) {
       res.className = "test-result err";
       let hint = "";
-      if (e.status === 401 || e.status === 403) hint = " (e-mail ou jeton invalide)";
-      else if (e.status === 404) hint = " (URL du site incorrecte ?)";
-      res.textContent = `✗ Échec : ${e.message}${hint}`;
+      if (e.status === 401 || e.status === 403) hint = " (invalid e-mail or token)";
+      else if (e.status === 404) hint = " (incorrect site URL?)";
+      res.textContent = `✗ Failed: ${e.message}${hint}`;
     }
   }
 
@@ -163,11 +163,11 @@
     await JKDStore.saveConfig(cfg);
     const res = $("saveResult");
     res.className = "test-result ok";
-    res.textContent = "✓ Enregistré.";
+    res.textContent = "✓ Saved.";
     setTimeout(() => (res.textContent = ""), 2500);
   }
 
-  /* Remplit le formulaire depuis une config (init et import). */
+  /* Fills the form from a config (init and import). */
   function applyConfig(cfg) {
     $("baseUrl").value = cfg.baseUrl || "";
     $("email").value = cfg.email || "";
@@ -199,7 +199,7 @@
     el.textContent = text;
   }
 
-  /* Export : télécharge un JSON reprenant l'état actuel du formulaire. */
+  /* Export: downloads a JSON reflecting the current form state. */
   function exportConfig() {
     const includeToken = $("includeToken").checked;
     const payload = JKDStore.buildExport(collectConfig(), { includeToken });
@@ -215,13 +215,13 @@
     setTimeout(() => URL.revokeObjectURL(url), 5000);
     backupMsg(
       includeToken
-        ? "✓ Exporté (jeton API inclus — conservez ce fichier en sûreté)."
-        : "✓ Exporté (sans le jeton API).",
+        ? "✓ Exported (API token included — keep this file safe)."
+        : "✓ Exported (without the API token).",
       "ok"
     );
   }
 
-  /* Import : valide le fichier, remplace la config et l'enregistre. */
+  /* Import: validates the file, replaces the config and saves it. */
   async function importConfigFile(file) {
     if (!file) return;
     try {
@@ -230,19 +230,19 @@
       const { config, warnings } = JKDStore.parseImport(text, current);
       const nb = config.projects.length;
       const ok = window.confirm(
-        `Remplacer la configuration actuelle par celle du fichier ?\n` +
-          `${nb} équipe(s) seront importée(s). Cette action écrase les réglages en cours.`
+        `Replace the current settings with the file's?\n` +
+          `${nb} team(s) will be imported. This action overwrites the current settings.`
       );
       if (!ok) {
-        backupMsg("Import annulé.", "");
+        backupMsg("Import cancelled.", "");
         return;
       }
       applyConfig(config);
       await JKDStore.saveConfig(config);
       const suffix = warnings.length ? " — " + warnings.join(" ") : "";
-      backupMsg(`✓ Configuration importée et enregistrée (${nb} équipe(s)).${suffix}`, "ok");
+      backupMsg(`✓ Settings imported and saved (${nb} team(s)).${suffix}`, "ok");
     } catch (e) {
-      backupMsg(`✗ ${e.message || "Import impossible."}`, "err");
+      backupMsg(`✗ ${e.message || "Import failed."}`, "err");
     }
   }
 
@@ -258,7 +258,7 @@
     $("importFile").addEventListener("change", (ev) => {
       const file = ev.target.files && ev.target.files[0];
       importConfigFile(file).finally(() => {
-        ev.target.value = ""; // permet de réimporter le même fichier
+        ev.target.value = ""; // allows re-importing the same file
       });
     });
   }

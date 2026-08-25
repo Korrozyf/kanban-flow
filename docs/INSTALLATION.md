@@ -1,116 +1,119 @@
-# Installation et mise à jour (pour les utilisateurs)
+# Installation and updates (for users)
 
-Kanban Flow est une extension de navigateur. Elle fonctionne dans **Chrome / Edge** et
-dans **Firefox**. Tout se passe dans votre navigateur : vos identifiants JIRA et votre
-configuration restent sur votre poste, rien n'est envoyé ailleurs.
+Kanban Flow is a browser extension. It works in **Chrome / Edge** and in **Firefox**.
+Everything happens inside your browser: your JIRA credentials and your settings stay on
+your machine, nothing is sent anywhere else.
+
+> **About this project** — Kanban Flow is built and maintained by a Kanban facilitator,
+> not a professional software developer. The code is written with the help of an AI coding
+> agent, then reviewed and tested by the maintainer against real team needs. Expect
+> pragmatic, purpose-built code rather than production-grade engineering: read it,
+> question it, and open an issue if something looks wrong.
 
 ---
 
-## 1. Télécharger la dernière version
+## 1. Download the latest version
 
-Rendez-vous sur la page **Releases** du dépôt et prenez le fichier de la version la plus
-récente :
+Go to the **Releases** page of the repository and grab the file for the most recent
+version:
 
-| Navigateur | Fichier à télécharger |
+| Browser | File to download |
 |---|---|
 | Chrome / Edge | `kanban-flow-<version>.zip` |
 | Firefox | `kanban-flow-<version>.xpi` |
 
 ---
 
-## 2. Installer dans Chrome ou Edge
+## 2. Install in Chrome or Edge
 
-1. Décompressez le `.zip` dans un dossier que vous **garderez** (par exemple
-   `Documents\kanban-flow`). Si vous supprimez ce dossier, l'extension disparaît.
-2. Ouvrez `chrome://extensions` (ou `edge://extensions`).
-3. Activez **Mode développeur** (interrupteur en haut à droite).
-4. Cliquez **Charger l'extension non empaquetée** et sélectionnez le dossier décompressé.
-5. L'icône Kanban Flow apparaît dans la barre d'outils. Épinglez-la si vous le souhaitez.
+1. Unzip the `.zip` into a folder you will **keep** (for example
+   `Documents\kanban-flow`). If you delete that folder, the extension disappears.
+2. Open `chrome://extensions` (or `edge://extensions`).
+3. Turn on **Developer mode** (top-right toggle).
+4. Click **Load unpacked** and select the unzipped folder.
+5. The Kanban Flow icon appears in the toolbar. Pin it if you like.
 
-> Chrome affiche un bandeau « Désactivez les extensions en mode développeur » à chaque
-> démarrage. C'est normal pour une extension installée hors boutique : cliquez sur la
-> croix, l'extension reste active.
+> Chrome shows a "Disable developer mode extensions" banner on every start-up. That is
+> expected for an extension installed outside the store: close the banner, the extension
+> stays active.
 
-## 3. Installer dans Firefox
+## 3. Install in Firefox
 
-Deux cas selon la façon dont la version a été publiée.
+Two cases, depending on how the version was published.
 
-**a) Le `.xpi` est signé** (recommandé, voir `docs/PUBLICATION.md`) :
+**a) The `.xpi` is signed** (recommended, see `docs/PUBLICATION.md`):
 
-1. Ouvrez le fichier `.xpi` depuis Firefox (glissez-le dans une fenêtre, ou
-   `Ctrl+O`).
-2. Confirmez l'installation. L'extension est **permanente** et se met à jour toute seule.
+1. Open the `.xpi` file from Firefox (drag it into a window, or press `Ctrl+O`).
+2. Confirm the installation. The extension is **permanent** and updates itself.
 
-**b) Le `.xpi` n'est pas signé** — installation temporaire, valable jusqu'à la fermeture
-de Firefox :
+**b) The `.xpi` is not signed** — temporary installation, valid until Firefox is closed:
 
-1. Ouvrez `about:debugging#/runtime/this-firefox`.
-2. **Charger un module temporaire…** puis sélectionnez le `.xpi` (ou le `manifest.json`
-   du dossier décompressé).
-3. À chaque redémarrage de Firefox, il faut recommencer **et réimporter votre
-   configuration** (voir §5).
+1. Open `about:debugging#/runtime/this-firefox`.
+2. **Load Temporary Add-on…** then select the `.xpi` (or the `manifest.json` inside the
+   unzipped folder).
+3. After every Firefox restart you have to do it again **and re-import your settings**
+   (see §5).
 
 ---
 
-## 4. Première configuration
+## 4. First-time setup
 
-1. Clic droit sur l'icône → **Options** (ou bouton ⚙ dans le tableau de bord).
-2. Renseignez :
-   - **URL JIRA** : `https://votre-societe.atlassian.net`
-   - **E-mail** : votre adresse de connexion Atlassian
-   - **Jeton API** : à créer sur
+1. Right-click the icon → **Options** (or the ⚙ button in the dashboard).
+2. Fill in:
+   - **JIRA URL**: `https://your-company.atlassian.net`
+   - **E-mail**: your Atlassian sign-in address
+   - **API token**: create one at
      <https://id.atlassian.com/manage-profile/security/api-tokens> → *Create API token*.
-     Le jeton reste stocké localement dans votre navigateur.
-3. Ajoutez vos équipes (clé de projet JIRA, mode Build ou Run, noms exacts des statuts).
-4. **Enregistrer**, puis ouvrez le tableau de bord.
+     The token is stored locally in your browser.
+3. Add your teams (JIRA project key, Build or Run mode, exact status names).
+4. **Save**, then open the dashboard.
 
-Le détail de chaque réglage est dans le [README](../README.md).
-
----
-
-## 5. Sauvegarder / restaurer votre configuration
-
-Section **« Sauvegarde de la configuration »** de la page d'options :
-
-- **Exporter** produit un fichier JSON. Par défaut le **jeton API n'y est pas inclus**
-  (case à cocher pour l'ajouter — dans ce cas, traitez le fichier comme un mot de passe).
-- **Importer** restaure ce fichier. Un import sans jeton conserve le jeton déjà en place.
-
-Faites un export après votre configuration initiale : cela vous évite de tout ressaisir
-en cas de réinstallation ou de changement de poste.
+Every setting is documented in the [README](../README.md).
 
 ---
 
-## 6. Mettre à jour
+## 5. Back up / restore your settings
 
-### Si vous avez installé un `.xpi` signé dans Firefox
+Use the **"Settings backup"** section of the options page:
 
-Rien à faire : Firefox vérifie les nouvelles versions et met à jour automatiquement.
+- **Export** produces a JSON file. By default the **API token is not included**
+  (tick the checkbox to add it — in that case, treat the file like a password).
+- **Import** restores that file. An import without a token keeps the token already in
+  place.
 
-### Sinon (Chrome, ou Firefox non signé)
-
-1. Téléchargez le nouveau paquet dans **Releases**.
-2. **Chrome** : décompressez-le **par-dessus** le dossier existant (en remplaçant les
-   fichiers), puis `chrome://extensions` → bouton **↻** sur la carte Kanban Flow.
-   Votre configuration est conservée : elle est stockée par le navigateur, pas dans le
-   dossier.
-3. **Firefox temporaire** : rechargez le module et réimportez votre configuration.
-
-### Être averti des nouvelles versions
-
-Sur la page GitHub du projet : bouton **Watch** → **Custom** → cochez **Releases**.
-Vous recevrez un e-mail à chaque publication.
-
-Le détail de ce qui change à chaque version est dans [CHANGELOG.md](../CHANGELOG.md).
+Export right after your initial setup: it saves you from re-entering everything after a
+reinstall or a machine change.
 
 ---
 
-## 7. En cas de problème
+## 6. Update
 
-- **Aucune donnée / erreur 401** : jeton API invalide ou expiré, régénérez-le.
-- **Erreur 403 ou 404** : l'URL JIRA ou la clé de projet est erronée.
-- **Compteurs à 0** : les noms de statuts saisis doivent correspondre **exactement** à
-  ceux de JIRA (la comparaison ignore la casse et les espaces autour, mais pas les
-  fautes de frappe).
-- Autre : ouvrez une **Issue** sur le dépôt en précisant navigateur, version de
-  l'extension et message d'erreur (**sans jamais coller votre jeton API**).
+### If you installed a signed `.xpi` in Firefox
+
+Nothing to do: Firefox checks for new versions and updates automatically.
+
+### Otherwise (Chrome, or unsigned Firefox)
+
+1. Download the new package from **Releases**.
+2. **Chrome**: unzip it **over** the existing folder (replacing the files), then go to
+   `chrome://extensions` → **↻** button on the Kanban Flow card. Your settings are
+   preserved: they are stored by the browser, not in the folder.
+3. **Temporary Firefox**: reload the add-on and re-import your settings.
+
+### Get notified of new versions
+
+On the project's GitHub page: **Watch** → **Custom** → tick **Releases**. You will get an
+e-mail for every publication.
+
+What changes in each version is listed in [CHANGELOG.md](../CHANGELOG.md).
+
+---
+
+## 7. Troubleshooting
+
+- **No data / 401 error**: invalid or expired API token, regenerate it.
+- **403 or 404 error**: the JIRA URL or the project key is wrong.
+- **Counters stuck at 0**: the status names you entered must match the JIRA ones
+  **exactly** (the comparison ignores case and surrounding spaces, but not typos).
+- Anything else: open an **Issue** on the repository, stating your browser, the extension
+  version and the error message (**never paste your API token**).

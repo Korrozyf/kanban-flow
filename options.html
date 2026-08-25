@@ -1,114 +1,114 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Kanban Flow — Configuration</title>
+    <title>Kanban Flow — Settings</title>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
     <div class="wrap">
       <header>
-        <h1>⚙ Kanban Flow — Configuration</h1>
-        <p class="muted">Connexion JIRA Cloud, équipes et définitions des indicateurs.</p>
+        <h1>⚙ Kanban Flow — Settings</h1>
+        <p class="muted">JIRA Cloud connection, teams, and metric definitions.</p>
       </header>
 
       <section class="card">
-        <h2>1. Connexion JIRA Cloud</h2>
+        <h2>1. JIRA Cloud connection</h2>
         <div class="field">
-          <label for="baseUrl">URL du site JIRA</label>
-          <input id="baseUrl" type="url" placeholder="https://mon-entreprise.atlassian.net" />
-          <small>Format : https://&lt;votre-domaine&gt;.atlassian.net</small>
+          <label for="baseUrl">JIRA site URL</label>
+          <input id="baseUrl" type="url" placeholder="https://your-company.atlassian.net" />
+          <small>Format: https://&lt;your-domain&gt;.atlassian.net</small>
         </div>
         <div class="field">
-          <label for="email">E-mail Atlassian</label>
-          <input id="email" type="email" placeholder="prenom.nom@entreprise.com" />
+          <label for="email">Atlassian e-mail</label>
+          <input id="email" type="email" placeholder="first.last@company.com" />
         </div>
         <div class="field">
-          <label for="token">Jeton API</label>
-          <input id="token" type="password" placeholder="Collez votre API token" />
+          <label for="token">API token</label>
+          <input id="token" type="password" placeholder="Paste your API token" />
           <small>
-            Créez-en un sur
+            Create one at
             <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">
-              id.atlassian.com › API tokens</a>. Stocké localement dans le navigateur.
+              id.atlassian.com › API tokens</a>. Stored locally in the browser.
           </small>
         </div>
         <div class="row">
-          <button id="testBtn" class="btn">Tester la connexion</button>
+          <button id="testBtn" class="btn">Test connection</button>
           <span id="testResult" class="test-result"></span>
         </div>
       </section>
 
       <section class="card">
-        <h2>2. Réglages des indicateurs</h2>
+        <h2>2. Metric settings</h2>
         <div class="grid3">
           <div class="field">
-            <label for="macrocycleStart">Date de démarrage du macrocycle</label>
+            <label for="macrocycleStart">Macrocycle start date</label>
             <input id="macrocycleStart" type="date" />
             <small>
-              Première semaine de référence. On affiche la semaine en cours + jusqu'à
-              3 semaines complètes précédentes, sans jamais remonter avant cette date.
-              Vide = 3 semaines précédentes par défaut.
+              First reference week. Shows the current week plus up to
+              3 previous completed weeks, never going back before this date.
+              Empty = 3 previous weeks by default.
             </small>
           </div>
           <div class="field">
-            <label for="aggregate">Agrégation lead/cycle time</label>
+            <label for="aggregate">Lead/cycle time aggregation</label>
             <select id="aggregate">
-              <option value="median">Médiane (recommandé)</option>
-              <option value="average">Moyenne</option>
+              <option value="median">Median (recommended)</option>
+              <option value="average">Average</option>
             </select>
           </div>
           <div class="field">
-            <label for="threshold">Seuil « stable » (%)</label>
+            <label for="threshold">"Stable" threshold (%)</label>
             <input id="threshold" type="number" min="0" max="100" value="10" />
-            <small>Variation en-deçà de laquelle la tendance est « stable ».</small>
+            <small>Variation below which the trend is "stable".</small>
           </div>
           <div class="field">
-            <label for="storyPointsField">Champ JIRA des story points (optionnel)</label>
-            <input id="storyPointsField" type="text" placeholder="ex : customfield_10016" />
+            <label for="storyPointsField">JIRA story points field (optional)</label>
+            <input id="storyPointsField" type="text" placeholder="e.g. customfield_10016" />
             <small>
-              Laissez vide pour une détection automatique (« Story Points » /
-              « Story point estimate »). À renseigner si votre site JIRA utilise un
-              nom de champ inhabituel.
+              Leave empty for automatic detection ("Story Points" /
+              "Story point estimate"). Fill in if your JIRA site uses an
+              unusual field name.
             </small>
           </div>
         </div>
 
-        <h3>Créneaux de comptage (mode Build)</h3>
+        <h3>Counting windows (Build mode)</h3>
         <p class="muted">
-          Réglage <strong>global</strong> : appliqué à toutes les équipes en mode Build.
-          Les bornes de fin sont <strong>exclues</strong> (« vendredi fin de journée » = samedi 00:00).
+          <strong>Global</strong> setting: applied to all teams in Build mode.
+          End boundaries are <strong>exclusive</strong> ("Friday end of day" = Saturday 00:00).
         </p>
         <div class="grid3">
           <div class="field">
-            <label for="engageDay">Engagé — jour</label>
+            <label for="engageDay">Committed — day</label>
             <select id="engageDay"></select>
-            <small class="hint">Tickets présents sur le board pendant ce créneau.</small>
+            <small class="hint">Tickets present on the board during this window.</small>
           </div>
           <div class="field">
-            <label for="engageStart">Engagé — début</label>
+            <label for="engageStart">Committed — start</label>
             <input id="engageStart" type="time" value="00:00" />
           </div>
           <div class="field">
-            <label for="engageEnd">Engagé — fin</label>
+            <label for="engageEnd">Committed — end</label>
             <input id="engageEnd" type="time" value="12:00" />
           </div>
         </div>
         <div class="grid4">
           <div class="field">
-            <label for="churnStartDay">Ajouts / retraits — jour de début</label>
+            <label for="churnStartDay">Additions / removals — start day</label>
             <select id="churnStartDay"></select>
           </div>
           <div class="field">
-            <label for="churnStartTime">Heure de début</label>
+            <label for="churnStartTime">Start time</label>
             <input id="churnStartTime" type="time" value="12:00" />
           </div>
           <div class="field">
-            <label for="churnEndDay">Jour de fin (exclu)</label>
+            <label for="churnEndDay">End day (exclusive)</label>
             <select id="churnEndDay"></select>
           </div>
           <div class="field">
-            <label for="churnEndTime">Heure de fin (exclue)</label>
+            <label for="churnEndTime">End time (exclusive)</label>
             <input id="churnEndTime" type="time" value="00:00" />
           </div>
         </div>
@@ -116,131 +116,131 @@
 
       <section class="card">
         <div class="section-head">
-          <h2>3. Équipes / Projets</h2>
-          <button id="addProjectBtn" class="btn">+ Ajouter une équipe</button>
+          <h2>3. Teams / Projects</h2>
+          <button id="addProjectBtn" class="btn">+ Add a team</button>
         </div>
         <p class="muted">
-          Renseignez pour chaque équipe la clé de projet JIRA et les statuts exacts de
-          vos workflows. Les statuts sont séparés par des virgules et doivent correspondre
-          exactement (casse ignorée) aux noms dans JIRA.
+          For each team, fill in the JIRA project key and the exact statuses of
+          your workflows. Statuses are comma-separated and must match
+          exactly (case-insensitive) the names in JIRA.
         </p>
         <div id="projectList"></div>
       </section>
 
       <section class="card">
-        <h2>4. Sauvegarde de la configuration</h2>
+        <h2>4. Settings backup</h2>
         <p class="muted">
-          Exportez votre configuration dans un fichier avant toute mise à jour de
-          l'extension, puis réimportez-la après : rien à ressaisir. Le fichier peut aussi
-          être partagé à un collègue pour qu'il démarre avec les mêmes équipes.
+          Export your settings to a file before any extension update, then
+          re-import it afterwards: nothing to re-enter. The file can also be
+          shared with a colleague so they start with the same teams.
         </p>
         <div class="row">
-          <button id="exportBtn" class="btn">⬇ Exporter la configuration</button>
-          <button id="importBtn" class="btn">⬆ Importer une configuration</button>
+          <button id="exportBtn" class="btn">⬇ Export settings</button>
+          <button id="importBtn" class="btn">⬆ Import settings</button>
           <input id="importFile" type="file" accept="application/json,.json" hidden />
           <span id="backupResult" class="test-result"></span>
         </div>
         <div class="field">
           <label class="inline">
             <input id="includeToken" type="checkbox" />
-            Inclure le jeton API dans l'export
+            Include the API token in the export
           </label>
           <small>
-            Décoché par défaut : le jeton est un secret équivalent à un mot de passe.
-            Sans lui, tout le reste est restauré et il suffit de recoller le jeton.
-            À l'import, un fichier sans jeton ne supprime jamais celui déjà enregistré.
+            Unchecked by default: the token is a secret equivalent to a password.
+            Without it, everything else is restored and you just need to paste the token back in.
+            On import, a file without a token never deletes the one already saved.
           </small>
         </div>
       </section>
 
       <div class="save-bar">
-        <button id="saveBtn" class="btn btn-primary">💾 Enregistrer</button>
+        <button id="saveBtn" class="btn btn-primary">💾 Save</button>
         <span id="saveResult" class="test-result"></span>
-        <a id="openDashboard" href="dashboard.html" class="btn btn-ghost">Ouvrir le tableau de bord →</a>
+        <a id="openDashboard" href="dashboard.html" class="btn btn-ghost">Open dashboard →</a>
       </div>
     </div>
 
     <template id="projectTemplate">
       <div class="project" data-id="" data-mode="build">
         <div class="project-head">
-          <input class="p-name" type="text" placeholder="Nom de l'équipe (ex : Équipe Alpha)" />
-          <button class="btn btn-danger p-remove" title="Supprimer">✕</button>
+          <input class="p-name" type="text" placeholder="Team name (e.g. Team Alpha)" />
+          <button class="btn btn-danger p-remove" title="Remove">✕</button>
         </div>
         <div class="grid2">
           <div class="field">
-            <label>Clé de projet JIRA</label>
-            <input class="p-key" type="text" placeholder="ex : ALPHA" />
+            <label>JIRA project key</label>
+            <input class="p-key" type="text" placeholder="e.g. ALPHA" />
           </div>
           <div class="field">
-            <label>Type de Kanban</label>
+            <label>Kanban type</label>
             <select class="p-mode">
-              <option value="build">Build (flux : throughput, lead/cycle time)</option>
-              <option value="run">Run (support : ouverts, variance, priorité max)</option>
+              <option value="build">Build (flow: throughput, lead/cycle time)</option>
+              <option value="run">Run (support: open, variance, highest priority)</option>
             </select>
           </div>
         </div>
         <div class="field">
-          <label>JQL additionnelle (optionnel)</label>
-          <input class="p-jql" type="text" placeholder='ex : issuetype != Epic' />
+          <label>Additional JQL (optional)</label>
+          <input class="p-jql" type="text" placeholder='e.g. issuetype != Epic' />
         </div>
 
-        <!-- Champs communs / mode BUILD -->
+        <!-- Shared fields / BUILD mode -->
         <div class="mode-build">
           <div class="grid2">
             <div class="field">
-              <label>Statuts « En cours » (début du cycle time)</label>
-              <input class="p-wip" type="text" placeholder="ex : In Progress, In Review" />
+              <label>"In progress" statuses (start of cycle time)</label>
+              <input class="p-wip" type="text" placeholder="e.g. In Progress, In Review" />
             </div>
             <div class="field">
-              <label>Statuts « Terminé » (fin = throughput/lead/cycle)</label>
-              <input class="p-done" type="text" placeholder="ex : Done, Closed" />
+              <label>"Done" statuses (end = throughput/lead/cycle)</label>
+              <input class="p-done" type="text" placeholder="e.g. Done, Closed" />
             </div>
           </div>
           <div class="grid2">
             <div class="field">
-              <label>Statuts du board (tickets à faire par l'équipe)</label>
-              <input class="p-ready" type="text" placeholder="ex : Ready, À faire" />
-              <small class="hint">Sert au throughput engagé et aux ajouts au board, sur les créneaux définis en section 2.</small>
+              <label>Board statuses (work the team has committed to)</label>
+              <input class="p-ready" type="text" placeholder="e.g. Ready, To Do" />
+              <small class="hint">Used for committed throughput and additions to the board, on the windows defined in section 2.</small>
             </div>
             <div class="field">
-              <label>Statuts « Backlog » (non pris en charge par l'équipe)</label>
-              <input class="p-backlog" type="text" placeholder="ex : Backlog, To Do" />
-              <small class="hint">Sert aux remises en backlog, sur le créneau « ajouts / retraits » défini en section 2. Également utilisé en mode Run.</small>
+              <label>"Backlog" statuses (not yet taken on by the team)</label>
+              <input class="p-backlog" type="text" placeholder="e.g. Backlog, To Do" />
+              <small class="hint">Used for moves back to backlog, on the "additions / removals" window defined in section 2. Also used in Run mode.</small>
             </div>
           </div>
           <div class="field">
             <label class="inline">
               <input class="p-storypoints" type="checkbox" />
-              Suivre les story points de cette équipe
+              Track story points for this team
             </label>
-            <small class="hint">Ajoute un indicateur « story points livrés », un graphique par semaine et une colonne dans la liste des tickets terminés.</small>
+            <small class="hint">Adds a "delivered story points" metric, a weekly chart, and a column in the completed tickets list.</small>
           </div>
         </div>
 
-        <!-- Champs mode RUN -->
+        <!-- RUN mode fields -->
         <div class="mode-run">
           <div class="grid2">
             <div class="field">
-              <label>Labels des tickets de run</label>
-              <input class="p-runlabels" type="text" placeholder="ex : run, support, incident" />
-              <small>Séparés par des virgules. Les tickets portant l'un de ces labels sont analysés.</small>
+              <label>Run ticket labels</label>
+              <input class="p-runlabels" type="text" placeholder="e.g. run, support, incident" />
+              <small>Comma-separated. Tickets carrying any of these labels are analysed.</small>
             </div>
             <div class="field">
-              <label>Priorité(s) « maximale »</label>
-              <input class="p-maxprio" type="text" placeholder="ex : Highest, Blocker" />
-              <small>Valeurs exactes du champ Priorité JIRA (casse ignorée).</small>
+              <label>"Highest" priorities</label>
+              <input class="p-maxprio" type="text" placeholder="e.g. Highest, Blocker" />
+              <small>Exact values of the JIRA Priority field (case-insensitive).</small>
             </div>
           </div>
           <div class="grid2">
             <div class="field">
-              <label>Statuts de fermeture (tickets exclus des stats)</label>
-              <input class="p-done-run" type="text" placeholder="ex : Done, Closed, Résolu" />
-              <small>Un ticket dans l'un de ces statuts (ou résolu) n'est plus compté dans les indicateurs de run.</small>
+              <label>Closing statuses (tickets excluded from stats)</label>
+              <input class="p-done-run" type="text" placeholder="e.g. Done, Closed, Resolved" />
+              <small>A ticket in one of these statuses (or resolved) is no longer counted in the run metrics.</small>
             </div>
             <div class="field">
-              <label>Statuts « Backlog » du run (tickets non planifiés)</label>
-              <input class="p-backlog-run" type="text" placeholder="ex : Backlog, To Do, Nouveau" />
-              <small>Tout autre statut est considéré comme « dans le board » (à traiter). Les tickets ouverts en backlog sont listés séparément.</small>
+              <label>Run "Backlog" statuses (unplanned tickets)</label>
+              <input class="p-backlog-run" type="text" placeholder="e.g. Backlog, To Do, New" />
+              <small>Any other status is considered "on the board" (to be worked on). Open backlog tickets are listed separately.</small>
             </div>
           </div>
         </div>

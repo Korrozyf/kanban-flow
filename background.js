@@ -1,7 +1,7 @@
 /* Kanban Flow — background service worker
- * Rôle minimal : ouvrir (ou refocaliser) l'onglet du tableau de bord
- * quand on clique sur l'icône de l'extension. Compatible Chrome (service
- * worker) et Firefox (event page via background.scripts).
+ * Minimal role: open (or re-focus) the dashboard tab when the extension icon is
+ * clicked. Works on Chrome (service worker) and Firefox (event page via
+ * background.scripts).
  */
 const api = typeof browser !== "undefined" ? browser : chrome;
 
@@ -18,7 +18,7 @@ async function openDashboard() {
       return;
     }
   } catch (e) {
-    /* tabs.query peut échouer si la permission tabs n'est pas là ; on ouvre quand même */
+    /* tabs.query can fail when the tabs permission is missing; open anyway */
   }
   await api.tabs.create({ url: DASHBOARD_URL });
 }

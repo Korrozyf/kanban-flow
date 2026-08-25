@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Kanban Flow — Tableau de bord Scrum Master (JIRA)",
-  "description": "Dashboard multi-équipes pour Scrum Master : throughput, lead time, cycle time et tendances par semaine (lun-dim), directement depuis JIRA Cloud.",
-  "version": "1.24.2",
+  "name": "Kanban Flow — Kanban facilitator dashboard (JIRA)",
+  "description": "Multi-team dashboard for Kanban facilitators: throughput, lead time, cycle time and weekly trends (Mon-Sun), straight from JIRA Cloud.",
+  "version": "1.25.0",
   "permissions": [
     "storage"
   ],
@@ -16,7 +16,7 @@
     ]
   },
   "action": {
-    "default_title": "Kanban Flow — ouvrir le tableau de bord"
+    "default_title": "Kanban Flow — open the dashboard"
   },
   "options_ui": {
     "page": "options.html",
@@ -30,7 +30,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "kanban-flow@scrum-master.local",
+      "id": "kanban-flow@kanban-flow.local",
       "strict_min_version": "121.0"
     }
   }

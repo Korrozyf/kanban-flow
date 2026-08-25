@@ -1,107 +1,108 @@
-# Publier une version (pour le mainteneur)
+# Publishing a version (for the maintainer)
 
-Ce document décrit le cycle de publication du dépôt et les options réelles pour la
-**mise à jour automatique** chez les utilisateurs.
+This document describes the repository's release cycle and the real options for
+**automatic updates** on the users' side.
 
 ---
 
-## 1. Publier une nouvelle version
+## 1. Publish a new version
 
-Le versionnage est sémantique (`MAJEUR.MINEUR.CORRECTIF`, voir en-tête de
-`CHANGELOG.md`). `manifest.json` est la **seule source de vérité** de la version.
+Versioning is semantic (`MAJOR.MINOR.PATCH`, see the header of `CHANGELOG.md`).
+`manifest.json` is the **single source of truth** for the version.
 
 ```bash
-# 1. Faire les modifications, puis mettre à jour la version
-#    → manifest.json ("version") ET CHANGELOG.md (nouvelle section "## x.y.z")
+# 1. Make the changes, then bump the version
+#    → manifest.json ("version") AND CHANGELOG.md (new "## x.y.z" section)
 
-# 2. Vérifier que le paquet se construit
+# 2. Check that the package builds
 ./tools/build.sh
 
-# 3. Committer
+# 3. Commit
 git add -A
-git commit -m "1.25.0 — <résumé court>"
+git commit -m "1.25.0 — <short summary>"
 git push
 
-# 4. Étiqueter et pousser l'étiquette : c'est ce qui déclenche la publication
+# 4. Tag and push the tag: this is what triggers the publication
 git tag v1.25.0
 git push origin v1.25.0
 ```
 
-Le workflow `.github/workflows/release.yml` prend alors le relais :
+The `.github/workflows/release.yml` workflow then takes over:
 
-1. il **refuse** de publier si l'étiquette ne correspond pas à la version du manifest ;
-2. il contrôle la syntaxe de tous les fichiers JS ;
-3. il construit `kanban-flow-<version>.zip` (Chrome) et `.xpi` (Firefox) ;
-4. il crée la **release GitHub** avec les notes extraites de la section correspondante du
-   `CHANGELOG.md` et les deux paquets en pièces jointes.
+1. it **refuses** to publish if the tag does not match the manifest version;
+2. it syntax-checks every JS file;
+3. it builds `kanban-flow-<version>.zip` (Chrome) and `.xpi` (Firefox);
+4. it creates the **GitHub release** with the notes extracted from the matching section of
+   `CHANGELOG.md` and both packages attached.
 
-Suivi de l'exécution : onglet **Actions** du dépôt.
+Follow the run in the repository's **Actions** tab.
 
 ---
 
-## 2. Mise à jour automatique : ce qui est réellement possible
+## 2. Automatic updates: what is actually possible
 
-GitHub distribue et versionne, mais **ne met pas à jour une extension tout seul**. Voici
-les trois scénarios, du plus simple au plus confortable pour l'utilisateur.
+GitHub distributes and versions, but **does not update an extension on its own**. Here are
+the three scenarios, from the simplest to the most comfortable for the user.
 
-### Scénario A — GitHub seul (état actuel, aucun compte à créer)
+### Scenario A — GitHub only (current state, no account needed)
 
-- L'utilisateur télécharge le paquet et l'installe (voir `docs/INSTALLATION.md`).
-- Mise à jour = retélécharger + recharger. Configuration conservée dans Chrome.
-- Il peut s'abonner aux releases (**Watch → Releases**) pour être averti.
+- The user downloads the package and installs it (see `docs/INSTALLATION.md`).
+- Updating = download again + reload. Settings are preserved in Chrome.
+- They can subscribe to releases (**Watch → Releases**) to be notified.
 
-C'est suffisant pour quelques utilisateurs internes.
+That is good enough for a handful of internal users.
 
-### Scénario B — Firefox avec mise à jour automatique (gratuit)
+### Scenario B — Firefox with automatic updates (free)
 
-Firefox accepte l'auto-hébergement, à condition que le `.xpi` soit **signé par Mozilla**.
+Firefox allows self-hosting, provided the `.xpi` is **signed by Mozilla**.
 
-1. Créez un compte sur <https://addons.mozilla.org> → *Developer Hub*.
-2. Soumettez le `.xpi` en mode **« On your own site » (unlisted)** : l'extension n'est pas
-   publiée dans la galerie publique, Mozilla se contente de la signer.
-3. Récupérez le `.xpi` signé et joignez-le à la release GitHub.
-4. Ajoutez dans `manifest.json` l'adresse du manifeste de mise à jour :
+1. Create an account on <https://addons.mozilla.org> → *Developer Hub*.
+2. Submit the `.xpi` in **"On your own site" (unlisted)** mode: the extension is not
+   published in the public gallery, Mozilla merely signs it.
+3. Download the signed `.xpi` and attach it to the GitHub release.
+4. Add the update manifest URL to `manifest.json`:
 
 ```json
 "browser_specific_settings": {
   "gecko": {
-    "id": "kanban-flow@scrum-master.local",
+    "id": "kanban-flow@kanban-flow.local",
     "strict_min_version": "121.0",
-    "update_url": "https://raw.githubusercontent.com/<utilisateur>/<dépôt>/main/docs/updates.json"
+    "update_url": "https://raw.githubusercontent.com/<user>/<repo>/main/docs/updates.json"
   }
 }
 ```
 
-5. Tenez à jour `docs/updates.json` (modèle fourni dans ce dossier) à chaque release :
-   Firefox l'interroge périodiquement et installe la nouvelle version automatiquement.
+5. Keep `docs/updates.json` up to date (template provided in this folder) for every
+   release: Firefox polls it periodically and installs the new version automatically.
 
-Le flux peut être automatisé plus tard avec l'API AMO (`web-ext sign`) dans le workflow,
-en stockant les clés `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` dans les *Secrets* du dépôt.
+The flow can be automated later with the AMO API (`web-ext sign`) inside the workflow, by
+storing the `AMO_JWT_ISSUER` / `AMO_JWT_SECRET` keys in the repository *Secrets*.
 
-### Scénario C — Chrome avec mise à jour automatique (5 $ une fois)
+### Scenario C — Chrome with automatic updates (one-off $5)
 
-Chrome **bloque** les extensions auto-hébergées sous Windows et macOS (sauf stratégie
-d'entreprise). La seule voie praticable est le **Chrome Web Store** en visibilité
-**« Non répertoriée » (unlisted)** :
+Chrome **blocks** self-hosted extensions on Windows and macOS (unless an enterprise policy
+is in place). The only practical route is the **Chrome Web Store** with **"Unlisted"**
+visibility:
 
-1. Compte développeur sur <https://chrome.google.com/webstore/devconsole> (frais d'accès
-   unique de 5 $).
-2. Téléverser `kanban-flow-<version>.zip`, visibilité *Non répertoriée* : seuls les
-   détenteurs du lien peuvent installer.
-3. Chrome met alors à jour automatiquement chez tous les utilisateurs. Chaque nouvelle
-   version passe par une revue (généralement quelques heures à quelques jours).
+1. Developer account at <https://chrome.google.com/webstore/devconsole> (one-off $5
+   registration fee).
+2. Upload `kanban-flow-<version>.zip` with *Unlisted* visibility: only people holding the
+   link can install it.
+3. Chrome then updates every user automatically. Each new version goes through a review
+   (usually a few hours to a few days).
 
-Ce dépôt reste la source du code et des notes de version dans les trois scénarios.
+This repository remains the source of the code and of the release notes in all three
+scenarios.
 
 ---
 
-## 3. Points de vigilance
+## 3. Things to watch out for
 
-- **Ne jamais committer de jeton API JIRA.** `.gitignore` exclut déjà les exports de
-  configuration (`*kanban-flow-config*.json`, `config-*.json`) ; vérifiez malgré tout vos
-  diffs avant de committer.
-- **Une étiquette = une version du manifest.** Le workflow échoue sinon, volontairement.
-- **Toujours ajouter une section au `CHANGELOG.md`** : elle sert de notes de version
-  publiées automatiquement.
-- **Relire le `README.md` et les aides contextuelles de `options.html`** dès qu'une règle
-  de calcul change : c'est la documentation qui vieillit le plus vite.
+- **Never commit a JIRA API token.** `.gitignore` already excludes settings exports
+  (`*kanban-flow-config*.json`, `config-*.json`); review your diffs before committing
+  anyway.
+- **One tag = one manifest version.** The workflow fails otherwise, on purpose.
+- **Always add a `CHANGELOG.md` section**: it is used as the automatically published
+  release notes.
+- **Re-read `README.md` and the inline hints in `options.html`** whenever a calculation
+  rule changes: documentation is what ages fastest.
