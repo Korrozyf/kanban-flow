@@ -1,0 +1,23 @@
+# Artefacts de build (régénérés par tools/build.sh)
+dist/
+*.zip
+*.xpi
+*.crx
+*.pem
+
+# Secrets — ne JAMAIS committer un export de configuration contenant le jeton API
+*kanban-flow-config*.json
+config-*.json
+.env
+.env.*
+
+# Systèmes de fichiers / éditeurs
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+
+# Dépendances de test locales
+node_modules/

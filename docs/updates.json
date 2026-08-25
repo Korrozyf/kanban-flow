@@ -1,0 +1,13 @@
+{
+  "_commentaire": "Manifeste de mise à jour Firefox. Utilisé UNIQUEMENT si vous signez le .xpi sur addons.mozilla.org en mode 'unlisted' et que vous ajoutez 'update_url' dans manifest.json (voir docs/PUBLICATION.md, scénario B). Remplacez <utilisateur>/<depot> puis ajoutez une entrée à chaque release.",
+  "addons": {
+    "kanban-flow@scrum-master.local": {
+      "updates": [
+        {
+          "version": "1.24.2",
+          "update_link": "https://github.com/<utilisateur>/<depot>/releases/download/v1.24.2/kanban-flow-1.24.2.xpi"
+        }
+      ]
+    }
+  }
+}

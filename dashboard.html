@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kanban Flow — Tableau de bord Scrum Master</title>
+    <link rel="stylesheet" href="dashboard.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">📊</span>
+        <div>
+          <h1>Kanban Flow</h1>
+          <p class="subtitle">Tableau de bord Scrum Master — JIRA Cloud</p>
+        </div>
+      </div>
+      <div class="controls">
+        <label for="projectSelect" class="sr-label">Équipe / Projet</label>
+        <select id="projectSelect" aria-label="Sélection de l'équipe">
+          <option value="">— Choisir une équipe —</option>
+        </select>
+        <button id="refreshBtn" class="btn" title="Rafraîchir les données">↻ Rafraîchir</button>
+        <label for="exportFormat" class="sr-label">Format d'export</label>
+        <select id="exportFormat" aria-label="Format de l'image exportée" title="Format de l'image">
+          <option value="png">PNG</option>
+          <option value="jpeg">JPG</option>
+        </select>
+        <button id="exportBtn" class="btn" disabled
+                title="Enregistrer la page complète d'indicateurs en image">🖼 Exporter l'image</button>
+        <button id="optionsBtn" class="btn btn-ghost" title="Configuration">⚙ Configuration</button>
+      </div>
+    </header>
+
+    <main id="main">
+      <section id="statusPanel" class="panel status">
+        <p id="statusMessage">Sélectionnez une équipe pour afficher ses indicateurs de flux.</p>
+      </section>
+
+      <section id="dashboard" class="hidden">
+        <!-- En-tête ajouté uniquement dans l'image exportée (masqué à l'écran). -->
+        <div id="exportHeader" class="export-header hidden">
+          <h2 id="exportTitle"></h2>
+          <p id="exportSubtitle"></p>
+        </div>
+        <p id="comparisonNote" class="comparison-note hidden"></p>
+
+        <div id="buildView">
+        <p class="legend">
+          <span class="legend-item"><span class="swatch swatch-complete"></span> Semaines complètes (bleu / violet)</span>
+          <span class="legend-item"><span class="swatch swatch-current"></span> Semaine en cours — incomplète (jaune / ambre dans les graphiques)</span>
+        </p>
+        <p class="cards-caption">Chiffres clés de la <strong>semaine en cours</strong> (badge « en cours ») — la tendance compare la semaine en cours à la semaine précédente.</p>
+        <div class="cards">
+          <div class="card card-current">
+            <div class="card-head">
+              <h3>Throughput engagé <span class="pill-current">en cours</span></h3>
+              <span id="engageTrend" class="trend"></span>
+            </div>
+            <div class="metric" id="engageValue">–</div>
+            <div class="metric-note" id="engageNote"></div>
+          </div>
+          <div class="card card-current">
+            <div class="card-head">
+              <h3>Throughput réalisé <span class="pill-current">en cours</span></h3>
+              <span id="thrTrend" class="trend"></span>
+            </div>
+            <div class="metric" id="thrValue">–</div>
+            <div class="metric-note" id="thrNote"></div>
+          </div>
+          <div class="card card-current hidden" id="spCard">
+            <div class="card-head">
+              <h3>Story points livrés <span class="pill-current">en cours</span></h3>
+              <span id="spTrend" class="trend"></span>
+            </div>
+            <div class="metric" id="spValue">–</div>
+            <div class="metric-note" id="spNote"></div>
+          </div>
+          <div class="card card-current">
+            <div class="card-head">
+              <h3>Lead time <small id="leadAggLabel">(médiane)</small> <span class="pill-current">en cours</span></h3>
+              <span id="leadTrend" class="trend"></span>
+            </div>
+            <div class="metric" id="leadValue">–</div>
+            <div class="metric-note">jours — semaine en cours</div>
+          </div>
+          <div class="card card-current">
+            <div class="card-head">
+              <h3>Cycle time <small id="cycleAggLabel">(médiane)</small> <span class="pill-current">en cours</span></h3>
+              <span id="cycleTrend" class="trend"></span>
+            </div>
+            <div class="metric" id="cycleValue">–</div>
+            <div class="metric-note">jours — semaine en cours</div>
+          </div>
+        </div>
+
+        <div class="panel" id="signalsPanel">
+          <h3>Signaux de flux par semaine <small>(board / backlog)</small></h3>
+          <div class="table-wrap">
+            <table class="signals-table" id="signalsTable">
+              <thead>
+                <tr>
+                  <th>Semaine</th>
+                  <th id="sigAddedHead">Ajoutés au board</th>
+                  <th id="sigBackHead">Remis en backlog</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p id="currentSignals" class="metric-note"></p>
+        </div>
+
+        <div class="charts">
+          <div class="panel chart-panel chart-panel-full">
+            <h3>Throughput par semaine <small>(engagé vs réalisé)</small></h3>
+            <div class="legend-group">
+              <h4>Semaines complètes</h4>
+              <p class="legend legend-series">
+                <span class="legend-item"><span class="swatch swatch-engage"></span> <span id="engageLegend">Engagé</span></span>
+                <span class="legend-item"><span class="swatch swatch-done"></span> Réalisé (tickets terminés)</span>
+              </p>
+            </div>
+            <div class="legend-group">
+              <h4>Semaine en cours</h4>
+              <p class="legend legend-series">
+                <span class="legend-item"><span class="swatch swatch-engage-current"></span> Engagé (ambre)</span>
+                <span class="legend-item"><span class="swatch swatch-done-current"></span> Réalisé (jaune)</span>
+              </p>
+            </div>
+            <div id="throughputChart" class="chart-box"></div>
+          </div>
+          <div class="panel chart-panel chart-panel-full hidden" id="spChartPanel">
+            <h3>Story points livrés par semaine <small>(tickets terminés)</small></h3>
+            <div class="legend-group">
+              <h4>Semaines complètes</h4>
+              <p class="legend legend-series">
+                <span class="legend-item"><span class="swatch swatch-done"></span> Story points livrés</span>
+              </p>
+            </div>
+            <div class="legend-group">
+              <h4>Semaine en cours</h4>
+              <p class="legend legend-series">
+                <span class="legend-item"><span class="swatch swatch-done-current"></span> Story points livrés (jaune)</span>
+              </p>
+            </div>
+            <div id="spChart" class="chart-box"></div>
+          </div>
+          <div class="panel chart-panel">
+            <h3>Lead time par semaine <small>(jours)</small></h3>
+            <div id="leadChart" class="chart-box"></div>
+          </div>
+          <div class="panel chart-panel">
+            <h3>Cycle time par semaine <small>(jours)</small></h3>
+            <div id="cycleChart" class="chart-box"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <details class="list-details">
+            <summary>Tickets terminés dans la semaine en cours (<span id="detailCount">0</span>)</summary>
+            <div class="table-wrap">
+              <table id="detailTable">
+                <thead>
+                  <tr>
+                    <th>Ticket</th>
+                    <th>Résumé</th>
+                    <th>Semaine</th>
+                    <th>Terminé le</th>
+                    <th class="sp-col hidden">Story points</th>
+                    <th>Lead (j)</th>
+                    <th>Cycle (j)</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="age-legend">
+              <span><i class="age-dot" style="background: var(--good)"></i> cycle ≤ 2 jours</span>
+              <span><i class="age-dot" style="background: var(--current-2)"></i> entre 2 et 4 jours</span>
+              <span><i class="age-dot" style="background: var(--bad)"></i> plus de 4 jours</span>
+            </p>
+          </details>
+          <p class="jql-note">JQL utilisée : <code id="jqlText"></code></p>
+        </div>
+        </div><!-- /#buildView -->
+
+        <div id="runView" class="hidden">
+          <p class="cards-caption">Kanban de <strong>run</strong> — tickets identifiés par leurs labels. Semaines du lundi 00:00 au dimanche 23:59. Chiffres clés de la <strong>semaine en cours</strong> (badge « en cours ») — la tendance compare la semaine en cours à la semaine précédente.</p>
+          <div class="cards">
+            <div class="card card-current">
+              <div class="card-head">
+                <h3>Tickets ouverts <span class="pill-current">en cours</span></h3>
+                <span id="runOpenTrend" class="trend"></span>
+              </div>
+              <div class="metric" id="runOpenValue">–</div>
+              <div class="metric-note" id="runOpenNote">non résolus à ce jour</div>
+            </div>
+            <div class="card card-current">
+              <div class="card-head">
+                <h3>Tickets fermés <span class="pill-current">en cours</span></h3>
+                <span id="runCloseTrend" class="trend"></span>
+              </div>
+              <div class="metric" id="runCloseValue">–</div>
+              <div class="metric-note" id="runCloseNote">fermés dans la semaine en cours</div>
+            </div>
+            <div class="card card-current">
+              <div class="card-head">
+                <h3>Tickets créés <span class="pill-current">en cours</span></h3>
+                <span id="runCreatedTrend" class="trend"></span>
+              </div>
+              <div class="metric" id="runCreatedValue">–</div>
+              <div class="metric-note" id="runCreatedNote">créés dans la semaine en cours</div>
+            </div>
+            <div class="card card-current">
+              <div class="card-head">
+                <h3>Temps moyen de résolution <span class="pill-current">en cours</span></h3>
+                <span id="runResolTrend" class="trend"></span>
+              </div>
+              <div class="metric" id="runResolValue">–</div>
+              <div class="metric-note" id="runResolNote">moyenne création → fermeture des tickets fermés cette semaine</div>
+              <p class="age-legend">
+                <span><i class="age-dot" style="background: var(--good)"></i> ≤ 1 jour</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i> 1 à 2 jours</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i> &gt; 2 jours</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="charts">
+            <div class="panel chart-panel">
+              <h3>Ouverts vs fermés par semaine <small>(créés / fermés dans la semaine)</small></h3>
+              <div class="legend-group">
+                <h4>Semaines complètes</h4>
+                <p class="legend legend-series">
+                  <span class="legend-item"><span class="swatch swatch-open"></span> Ouverts (créés dans la semaine)</span>
+                  <span class="legend-item"><span class="swatch swatch-closed"></span> Fermés dans la semaine</span>
+                </p>
+              </div>
+              <div class="legend-group">
+                <h4>Semaine en cours</h4>
+                <p class="legend legend-series">
+                  <span class="legend-item"><span class="swatch swatch-open-current"></span> Ouverts (ambre)</span>
+                  <span class="legend-item"><span class="swatch swatch-closed-current"></span> Fermés (jaune)</span>
+                </p>
+              </div>
+              <div id="runFlowChart" class="chart-box"></div>
+            </div>
+            <div class="panel chart-panel">
+              <h3>Tickets créés par jour <small>(semaine en cours vs semaine précédente)</small></h3>
+              <div class="legend-group">
+                <p class="legend legend-series">
+                  <span class="legend-item"><span class="swatch swatch-open"></span> Semaine précédente</span>
+                  <span class="legend-item"><span class="swatch swatch-done-current"></span> Semaine en cours</span>
+                </p>
+              </div>
+              <div id="runDailyChart" class="chart-box"></div>
+              <p class="metric-note" id="runDailyNote"></p>
+            </div>
+          </div>
+
+          <div class="panel">
+            <details class="list-details">
+              <summary>Tickets en priorité maximale <small>(<span id="runMaxPrioCount">0</span>)</small></summary>
+              <div class="table-wrap">
+                <table id="runMaxPrioTable">
+                  <thead>
+                    <tr>
+                      <th>Ticket</th><th>Résumé</th><th>Priorité</th><th>Créé le</th>
+                      <th>Création → 1er commentaire</th><th>Création → résolution</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <p class="age-legend">
+                <span><i class="age-dot" style="background: var(--good)"></i> moins de 1 jour</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i> entre 1 et 2 jours</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i> plus de 2 jours</span>
+              </p>
+            </details>
+          </div>
+
+          <div class="panel">
+            <details class="list-details">
+              <summary>Tickets ouverts non assignés <small>(<span id="runUnassignedCount">0</span>)</small></summary>
+              <div class="table-wrap">
+                <table id="runUnassignedTable">
+                  <thead>
+                    <tr><th>Ticket</th><th>Résumé</th><th>Statut</th><th>Priorité</th><th>Créé le</th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+
+          <div class="panel">
+            <details class="list-details">
+              <summary>Tickets ouverts dans le board (non résolus) <small>(<span id="runOpenCount">0</span>)</small> — triés par priorité décroissante puis du plus ancien au plus récent</summary>
+              <div class="table-wrap">
+                <table id="runOpenTable">
+                  <thead>
+                    <tr><th>Ticket</th><th>Résumé</th><th>Statut</th><th>Priorité</th><th>Assigné</th><th>Créé le</th><th>Depuis ouverture</th><th>Depuis dernière action</th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="age-legend">
+                <span><i class="age-dot" style="background: var(--good)"></i>moins de 1 jour</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i>1 à 2 jours</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i>plus de 2 jours</span>
+              </div>
+            </details>
+          </div>
+
+          <div class="panel">
+            <details class="list-details">
+              <summary>Tickets ouverts non planifiés (backlog) <small>(<span id="runBacklogCount">0</span>)</small> — triés par priorité décroissante puis du plus ancien au plus récent</summary>
+              <div class="table-wrap">
+                <table id="runBacklogTable">
+                  <thead>
+                    <tr><th>Ticket</th><th>Résumé</th><th>Statut</th><th>Priorité</th><th>Assigné</th><th>Créé le</th><th>Depuis ouverture</th><th>Depuis dernière action</th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <div class="age-legend">
+                <span><i class="age-dot" style="background: var(--good)"></i>moins de 1 jour</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i>1 à 2 jours</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i>plus de 2 jours</span>
+              </div>
+            </details>
+          </div>
+
+          <div class="panel">
+            <details class="list-details">
+              <summary>Tickets fermés cette semaine <small>(<span id="runCloseListCount">0</span>)</small> — triés par priorité décroissante puis de la fermeture la plus récente à la plus ancienne</summary>
+              <div class="table-wrap">
+                <table id="runClosedTable">
+                  <thead>
+                    <tr><th>Ticket</th><th>Résumé</th><th>Statut</th><th>Priorité</th><th>Assigné</th><th>Créé le</th><th>Fermé le</th><th>Ouverture → fermeture</th></tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+              <p class="age-legend">
+                <span><i class="age-dot" style="background: var(--good)"></i> moins de 1 jour</span>
+                <span><i class="age-dot" style="background: var(--current-2)"></i> entre 1 et 2 jours</span>
+                <span><i class="age-dot" style="background: var(--bad)"></i> plus de 2 jours</span>
+              </p>
+            </details>
+          </div>
+
+          <p class="jql-note">JQL utilisée : <code id="runJqlText"></code></p>
+        </div><!-- /#runView -->
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span id="footerInfo"></span>
+    </footer>
+
+    <script src="lib/store.js"></script>
+    <script src="lib/jira.js"></script>
+    <script src="lib/metrics.js"></script>
+    <script src="lib/charts.js"></script>
+    <script src="lib/html2canvas.min.js"></script>
+    <script src="lib/export-image.js"></script>
+    <script src="dashboard.js"></script>
+  </body>
+</html>
