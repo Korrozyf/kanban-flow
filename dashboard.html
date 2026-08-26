@@ -48,9 +48,9 @@
         <div id="buildView">
         <p class="legend">
           <span class="legend-item"><span class="swatch swatch-complete"></span> Completed weeks (blue / purple)</span>
-          <span class="legend-item"><span class="swatch swatch-current"></span> Current week — incomplete (yellow / amber in charts)</span>
+          <span class="legend-item legend-current"><span class="swatch swatch-current"></span> Current week — incomplete (yellow / amber in charts)</span>
         </p>
-        <p class="cards-caption">Key figures for the <strong>current week</strong> ("current" badge) — the trend compares the current week to the previous week.</p>
+        <p class="cards-caption">Key figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> — the trend compares it to the previous week.</p>
         <div class="cards">
           <div class="card card-current">
             <div class="card-head">
@@ -158,7 +158,7 @@
 
         <div class="panel">
           <details class="list-details">
-            <summary>Tickets completed in the current week (<span id="detailCount">0</span>)</summary>
+            <summary>Tickets completed in <span class="week-context-short">the current week</span> (<span id="detailCount">0</span>)</summary>
             <div class="table-wrap">
               <table id="detailTable">
                 <thead>
@@ -186,7 +186,7 @@
         </div><!-- /#buildView -->
 
         <div id="runView" class="hidden">
-          <p class="cards-caption">Kanban <strong>run</strong> — tickets identified by their labels. Weeks from Monday 00:00 to Sunday 23:59. Key figures for the <strong>current week</strong> ("current" badge) — the trend compares the current week to the previous week.</p>
+          <p class="cards-caption">Kanban <strong>run</strong> — tickets identified by their labels. Weeks from Monday 00:00 to Sunday 23:59. Key figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> — the trend compares it to the previous week.</p>
           <div class="cards">
             <div class="card card-current">
               <div class="card-head">

@@ -93,6 +93,28 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .test-result.ok { color: var(--good); }
 .test-result.err { color: var(--bad); }
 
+/* Issue types loaded from JIRA: checkbox list */
+.hidden { display: none !important; }
+.types-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2, transparent);
+}
+.types-box label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+.types-box input { width: auto; margin: 0; }
+
 @media (max-width: 680px) {
   .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
 }

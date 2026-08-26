@@ -6,6 +6,49 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.26.0
+
+### Changed
+- **"Macrocycle start date" renamed "Start date"**, and its meaning changed. The
+  analysis window is no longer "the current week plus up to 3 previous weeks bounded
+  by that date": it is now the week containing the start date **plus the 4 weeks that
+  follow** (5 weeks in total), **stopping at the current week** when it falls inside
+  that period.
+  - Window reaching today: the last week displayed is the current (incomplete) week,
+    exactly as before (badges, amber highlight, "same elapsed duration" comparisons).
+  - Window entirely in the past: the 5 weeks are displayed, **no week is flagged
+    "current"**, and the **last week of the window** becomes the reference week for
+    the key figures and the trends. Card badges, captions and the completed-tickets
+    list are relabelled with that week's date, the "current week" legend entry is
+    hidden, and an information banner states it explicitly.
+  - Empty start date: window of 5 weeks ending on the current week (previously 4).
+  - Display rules, colours and calculation rules are unchanged.
+- Configuration key `macrocycleStart` renamed **`startDate`**. Existing settings and
+  configuration files exported by an earlier version are **migrated automatically**
+  (the legacy key is still read on load and on import), so nothing has to be re-entered.
+
+### Added
+- **Issue types counted** — new per-team setting, available in **both** Build and Run
+  modes. Leave it empty to count every issue type (previous behaviour), or restrict
+  the analysis to the types you care about.
+  - Button **"Load types from JIRA"**: reads the real issue types of the project
+    (`GET /rest/api/3/project/{key}`) and shows them as checkboxes. Picking them from
+    that list removes any typo, casing or language problem.
+  - The text field stays editable (comma-separated) as a fallback when JIRA is not
+    reachable, and stays the single source of truth for what is saved.
+  - The restriction is applied as an `issuetype IN (...)` clause on **every** query of
+    both modes: delivered throughput, board snapshot (committed throughput), flow
+    signals (additions / moves back to backlog) and run tickets.
+  - Included in the settings export / import.
+
+### Unchanged (verified)
+- Weeks still run Monday 00:00 to Sunday 23:59, with strictly exclusive weekly
+  buckets (the counting-exclusivity harness passes unchanged).
+- Trends still compare the reference week to the previous one; "same elapsed
+  duration" comparison bases are unchanged (a past reference week simply compares
+  full week to full week).
+- Story points, image export, ticket lists, colour code and thresholds untouched.
+
 ## 1.25.0
 
 ### Changed

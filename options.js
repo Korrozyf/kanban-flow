@@ -23,6 +23,7 @@
       doneStatuses: [],
       readyStatuses: [],
       backlogStatuses: [],
+      issueTypes: [],
       runLabels: [],
       maxPriorities: [],
       extraJql: "",
@@ -40,6 +41,8 @@
     node.querySelector(".p-runlabels").value = (p.runLabels || []).join(", ");
     node.querySelector(".p-maxprio").value = (p.maxPriorities || []).join(", ");
     node.querySelector(".p-storypoints").checked = !!p.trackStoryPoints;
+    node.querySelector(".p-types").value = (p.issueTypes || []).join(", ");
+    wireIssueTypes(node);
 
     const modeSel = node.querySelector(".p-mode");
     modeSel.value = p.mode === "run" ? "run" : "build";
@@ -79,6 +82,7 @@
           }
           return build.length ? build : run;
         })(),
+        issueTypes: parseList(row.querySelector(".p-types").value),
         readyStatuses: parseList(row.querySelector(".p-ready").value),
         // Backlog statuses: field shared by both modes (build = .p-backlog,
         // run = .p-backlog-run). We take the one for the active mode, falling back to the other.
@@ -95,6 +99,65 @@
       });
     });
     return projects;
+  }
+
+  /* Issue types: the user clicks "Load types from JIRA", we read the real type
+   * names of the project and show them as checkboxes. Selecting from that list
+   * removes any typo / casing / language problem. The text field stays the
+   * single source of truth (and the fallback when JIRA is unreachable). */
+  function renderTypeBox(row, names) {
+    const box = row.querySelector(".p-types-box");
+    const input = row.querySelector(".p-types");
+    const selected = parseList(input.value).map((s) => s.toLowerCase());
+    box.innerHTML = "";
+    names.forEach((name) => {
+      const label = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = name;
+      cb.checked = selected.includes(name.toLowerCase());
+      cb.addEventListener("change", () => {
+        const picked = Array.from(box.querySelectorAll("input:checked")).map(
+          (el) => el.value
+        );
+        input.value = picked.join(", ");
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(name));
+      box.appendChild(label);
+    });
+    box.classList.toggle("hidden", !names.length);
+  }
+
+  function wireIssueTypes(row) {
+    const btn = row.querySelector(".p-types-load");
+    const msg = row.querySelector(".p-types-msg");
+    if (!btn) return;
+    btn.addEventListener("click", async () => {
+      const key = row.querySelector(".p-key").value.trim();
+      msg.className = "test-result p-types-msg";
+      if (!key) {
+        msg.classList.add("err");
+        msg.textContent = "Fill in the JIRA project key first.";
+        return;
+      }
+      const cfg = collectConfig();
+      if (!cfg.baseUrl || !cfg.email || !cfg.token) {
+        msg.classList.add("err");
+        msg.textContent = "Fill in the connection settings (section 1) first.";
+        return;
+      }
+      msg.textContent = "Loading…";
+      try {
+        const names = await JKDJira.makeClient(cfg).getIssueTypes(key);
+        renderTypeBox(row, names);
+        msg.className = "test-result p-types-msg ok";
+        msg.textContent = `✓ ${names.length} type(s) found on ${key}.`;
+      } catch (e) {
+        msg.className = "test-result p-types-msg err";
+        msg.textContent = `✗ ${e.message || "Types could not be loaded."}`;
+      }
+    });
   }
 
   const WEEK_DAYS = [
@@ -119,7 +182,7 @@
       baseUrl: JKDJira.normalizeBaseUrl($("baseUrl").value),
       email: $("email").value.trim(),
       token: $("token").value,
-      macrocycleStart: $("macrocycleStart").value || "",
+      startDate: $("startDate").value || "",
       aggregate: $("aggregate").value,
       stableThresholdPct: Math.max(0, parseInt($("threshold").value, 10) || 10),
       engageDay: parseInt($("engageDay").value, 10) || 0,
@@ -172,7 +235,7 @@
     $("baseUrl").value = cfg.baseUrl || "";
     $("email").value = cfg.email || "";
     $("token").value = cfg.token || "";
-    $("macrocycleStart").value = cfg.macrocycleStart || "";
+    $("startDate").value = cfg.startDate || cfg.macrocycleStart || "";
     $("aggregate").value = cfg.aggregate || "median";
     $("threshold").value = cfg.stableThresholdPct != null ? cfg.stableThresholdPct : 10;
     fillDaySelects();

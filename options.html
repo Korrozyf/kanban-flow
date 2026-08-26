@@ -43,12 +43,12 @@
         <h2>2. Metric settings</h2>
         <div class="grid3">
           <div class="field">
-            <label for="macrocycleStart">Macrocycle start date</label>
-            <input id="macrocycleStart" type="date" />
+            <label for="startDate">Start date</label>
+            <input id="startDate" type="date" />
             <small>
-              First reference week. Shows the current week plus up to
-              3 previous completed weeks, never going back before this date.
-              Empty = 3 previous weeks by default.
+              First week displayed, in Build and in Run. The window covers that
+              week plus the 4 following ones, stopping at the current week when
+              it falls inside that period. Empty = the last 5 weeks up to today.
             </small>
           </div>
           <div class="field">
@@ -181,7 +181,28 @@
         </div>
         <div class="field">
           <label>Additional JQL (optional)</label>
-          <input class="p-jql" type="text" placeholder='e.g. issuetype != Epic' />
+          <input class="p-jql" type="text" placeholder='e.g. labels != obsolete' />
+        </div>
+
+        <!-- Issue types: shared by both modes -->
+        <div class="field">
+          <label>Issue types counted</label>
+          <div class="row">
+            <button type="button" class="btn p-types-load">Load types from JIRA</button>
+            <span class="test-result p-types-msg"></span>
+          </div>
+          <div class="types-box p-types-box hidden"></div>
+          <input
+            class="p-types"
+            type="text"
+            placeholder="e.g. Story, Bug (empty = all types)"
+          />
+          <small class="hint">
+            Leave empty to count every issue type. Click "Load types from JIRA"
+            to tick the real types of this project: no typo and no casing
+            problem. The text field stays editable as a fallback and is
+            comma-separated.
+          </small>
         </div>
 
         <!-- Shared fields / BUILD mode -->

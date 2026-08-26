@@ -20,10 +20,16 @@ open an issue if something looks wrong.
   resolution time, unassigned / highest-priority lists). See the "Run mode" section
   below.
 - **Team / project selection** via a dropdown menu (multi-team).
-- **Macrocycle start date** (first week) configurable: displays the current week plus
-  up to **3 previous completed weeks**, never going back before that date.
+- **Start date** configurable (build and run): the analysis window is the week
+  containing that date **plus the 4 weeks that follow** (5 weeks in total), stopping
+  at the **current week** when it falls inside that period.
+  - Window reaching today → the last week displayed is the current (incomplete) week.
+  - Window entirely in the past → the 5 weeks are displayed, none is flagged
+    "current", and the **last week of the window** is the reference week for the
+    key figures and the trends (a banner says so explicitly).
   - Future date → error message, no display.
-  - Date = current week → no comparison (no previous completed week).
+  - Date = current week → no comparison (no previous week).
+  - Empty date → the last 5 weeks up to today.
 - **Delivered throughput** for the current week (Monday → Sunday) plus previous weeks
   (bars). The **current (incomplete) week** is shown in **yellow** to clearly
   distinguish it from completed weeks.
@@ -91,10 +97,10 @@ For each ticket completed in the analyzed window:
 - **End date** = last transition into one of your "Done" statuses.
 - **Start date** = first transition into one of your "In progress" statuses
   (if none, cycle time is approximated on the creation date — flagged with `*`).
-- **Bounded to the macrocycle**: if the creation date (lead time) or the first entry
-  into "in progress" (cycle time) is **earlier than the macrocycle start date**, that
-  start date is used instead. Time elapsed before the start of the macrocycle is
-  therefore never counted.
+- **Bounded to the start date**: if the creation date (lead time) or the first entry
+  into "in progress" (cycle time) is **earlier than the configured start date**, that
+  start date is used instead. Time elapsed before the start date is therefore never
+  counted.
 - Weekly aggregation is the **median** by default (more robust to outliers),
   configurable to average.
 - **Trend** = comparison of the current week to the previous week; below the
@@ -270,13 +276,17 @@ Steps (~1 minute):
    - API token: the one obtained in the **"Getting a JIRA Cloud API token"** section
      above (<https://id.atlassian.com/manage-profile/security/api-tokens>)
    - Click **Test connection**.
-3. **Metric settings**: macrocycle start date, aggregation (median/average), stability
+3. **Metric settings**: start date (first week of the 5-week window), aggregation (median/average), stability
    threshold, **JIRA story points field** (optional, empty = auto-detect), and **Build
    mode counting windows** ("committed" window and "additions / removals" window: day +
    hours).
 4. **Teams / Projects**: for each of your teams, enter the name, the JIRA project key,
    and the **exact statuses** of your workflow (comma-separated, case-insensitive):
    - **Kanban type**: **Build** or **Run**;
+   - **Issue types counted** (both modes): leave empty to count every type, or click
+     **"Load types from JIRA"** to tick the real issue types of the project. Picking
+     them from that list removes any typo, casing or language problem; the text field
+     remains editable as a fallback when JIRA is unreachable.
    - In **Build** mode: "In progress" (start of cycle time) and "Done" (delivered
      throughput / lead / cycle); "Board statuses" (committed throughput / additions to
      board) and "Backlog" (moves back to backlog). Board / Backlog statuses are

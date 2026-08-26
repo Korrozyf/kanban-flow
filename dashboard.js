@@ -71,15 +71,50 @@
   // Info banner about the analysed window / the comparison basis.
   function renderComparisonNote(r) {
     const info = $("comparisonNote");
+    const notes = [];
     if (!r.hasComparison) {
-      info.classList.remove("hidden");
-      info.textContent =
-        "ℹ The macrocycle start date falls on the current week: " +
-        "no previous week, so no trend comparison.";
-    } else {
-      info.classList.add("hidden");
-      info.textContent = "";
+      notes.push(
+        "ℹ The start date falls on the current week: no previous week, " +
+          "so no trend comparison."
+      );
     }
+    if (!r.hasCurrentWeek && r.weeks && r.weeks.length) {
+      const first = r.weeks[0].label;
+      const last = r.weeks[r.weeks.length - 1].label;
+      notes.push(
+        `ℹ The 5-week window from the start date (${first} → ${last}) is entirely ` +
+          `in the past: the key figures describe the week of ${last}, not the ` +
+          "current week."
+      );
+    }
+    info.classList.toggle("hidden", !notes.length);
+    info.textContent = notes.join(" ");
+  }
+
+  /* The reference week of the key figures is the LAST week of the window. It is
+   * the current week only when the window reaches today; otherwise the whole
+   * window sits in the past and the wording must not claim "current week". */
+  function applyWeekContext(r) {
+    const cur = !!r.hasCurrentWeek;
+    const label = r.weeks && r.weeks.length ? r.weeks[r.weeks.length - 1].label : "";
+    document.querySelectorAll(".pill-current").forEach((el) => {
+      el.textContent = cur ? "current" : label;
+      el.title = cur
+        ? "Current week (incomplete)"
+        : `Week of ${label} — last week of the window`;
+    });
+    document.querySelectorAll(".week-context").forEach((el) => {
+      el.innerHTML = cur
+        ? 'the <strong>current week</strong> ("current" badge)'
+        : `the <strong>week of ${label}</strong> (last week of the window)`;
+    });
+    document.querySelectorAll(".week-context-short").forEach((el) => {
+      el.textContent = cur ? "the current week" : `the week of ${label}`;
+    });
+    document
+      .querySelectorAll(".legend-current")
+      .forEach((el) => el.classList.toggle("hidden", !cur));
+    return { isCurrent: cur, label };
   }
 
   function showView(mode) {
@@ -98,11 +133,15 @@
     $("cycleAggLabel").textContent = aggLabel;
 
     renderComparisonNote(r);
+    const ctx = applyWeekContext(r);
 
     // Cards
     const curLabel = last(r.weeks).label;
+    const weekPhrase = ctx.isCurrent
+      ? `current week of ${curLabel} (incomplete)`
+      : `week of ${curLabel}`;
     $("thrValue").textContent = last(r.throughput);
-    $("thrNote").textContent = `completed tickets — current week of ${curLabel} (incomplete)`;
+    $("thrNote").textContent = `completed tickets — ${weekPhrase}`;
     $("engageValue").textContent = r.hasEngage ? last(r.throughputEngage) : "–";
     $("engageNote").textContent = r.hasEngage
       ? `tickets on the board (${r.engageLabel}) — week of ${curLabel}`
@@ -119,7 +158,7 @@
       $("spValue").textContent = fmtPoints(last(r.storyPointsWeekly));
       $("spNote").textContent =
         `points delivered on ${last(r.storyPointsCounts)} estimated ticket(s) — ` +
-        `current week of ${curLabel} (incomplete)`;
+        weekPhrase;
       trendBadge("spTrend", r.trends.storyPoints);
     } else if (r.trackStoryPoints) {
       // Option enabled but field not found: flagged without blocking.
@@ -189,7 +228,8 @@
       currentIndex: r.currentIndex,
     });
 
-    // Detail table — only tickets completed in the CURRENT WEEK.
+    // Detail table — only tickets completed in the REFERENCE WEEK (the last
+    // week of the window, i.e. the current week when the window reaches today).
     const tbody = $("detailTable").querySelector("tbody");
     tbody.innerHTML = "";
     const curDetails = r.details.filter((d) => d.weekIndex === r.currentIndex);
@@ -258,6 +298,7 @@
     $("dashboard").classList.remove("hidden");
     showView("run");
     renderComparisonNote(r);
+    applyWeekContext(r);
 
     const last = (arr) => arr[arr.length - 1];
     const curLabel = last(r.weeks).label;
@@ -348,10 +389,13 @@
       currentIndex: -1,
     });
     const sum = (a) => a.reduce((x, y) => x + y, 0);
+    const dailyWhen = r.hasCurrentWeek
+      ? `this week (${r.elapsedDays} day(s) elapsed)`
+      : `in the week of ${curLabel}`;
     $("runDailyNote").textContent = r.createdPerDayPrev
-      ? `${sum(r.createdPerDayCurrent)} ticket(s) created this week (${r.elapsedDays} day(s) elapsed) ` +
+      ? `${sum(r.createdPerDayCurrent)} ticket(s) created ${dailyWhen} ` +
         `vs ${sum(r.createdPerDayPrev)} over the entire previous week.`
-      : `${sum(r.createdPerDayCurrent)} ticket(s) created this week — no previous week to compare.`;
+      : `${sum(r.createdPerDayCurrent)} ticket(s) created ${dailyWhen} — no previous week to compare.`;
 
     // Open table
     const openBody = $("runOpenTable").querySelector("tbody");
@@ -484,20 +528,21 @@
         `<td>${wl}</td>` + cell(r.readyAdded[i]) + cell(r.backlogReturned[i]);
       tbody.appendChild(tr);
     });
-    // Summary of the current week (answers to "was there any, how many").
+    // Summary of the reference week (answers to "was there any, how many").
     const ci = r.currentIndex;
+    const when = r.hasCurrentWeek ? "this week" : `in the week of ${r.weeks[ci].label}`;
     const added = r.readyAdded[ci];
     const back = r.backlogReturned[ci];
     const parts = [];
     parts.push(
       added > 0
-        ? `<span class="badge warn">⚠ ${added} ticket(s) added to the board (${r.churnLabel}) this week</span>`
-        : `<span class="badge">No ticket added to the board (${r.churnLabel}) this week</span>`
+        ? `<span class="badge warn">⚠ ${added} ticket(s) added to the board (${r.churnLabel}) ${when}</span>`
+        : `<span class="badge">No ticket added to the board (${r.churnLabel}) ${when}</span>`
     );
     parts.push(
       back > 0
-        ? `<span class="badge warn">⚠ ${back} ticket(s) moved back to backlog (${r.churnLabel}) this week</span>`
-        : `<span class="badge">No move back to backlog (${r.churnLabel}) this week</span>`
+        ? `<span class="badge warn">⚠ ${back} ticket(s) moved back to backlog (${r.churnLabel}) ${when}</span>`
+        : `<span class="badge">No move back to backlog (${r.churnLabel}) ${when}</span>`
     );
     note.innerHTML = parts.join(" ");
   }
@@ -590,7 +635,7 @@
         $("dashboard").classList.add("hidden");
         const d = r.firstWeekStart.toLocaleDateString("en-GB");
         setStatus(
-          `The macrocycle start date (week of ${d}) is in the future ` +
+          `The start date (week of ${d}) is in the future ` +
             "relative to the current week. No data to display: " +
             "choose a date equal to or earlier than the current week in ⚙ Settings.",
           "error"
