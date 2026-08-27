@@ -6,6 +6,26 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.26.1
+
+### Fixed
+- **The current-week color code was applied to the last week of the window even when
+  that week was not the current week** (regression introduced with the 5-week window
+  in 1.26.0). With a start date placed far enough in the past, the 5th week was
+  painted yellow / amber in the charts, carried the amber card borders and the
+  "current" badge, and highlighted its row in the flow signals table — while it was
+  merely the reference week of a window entirely in the past.
+  Every current-week marker is now conditioned on the window actually reaching today
+  (`hasCurrentWeek`), in **build** and in **run**:
+  - charts (throughput, story points, lead, cycle, run flow, creations per day)
+    receive `currentIndex = -1` and therefore keep the completed-week colors;
+  - card borders, badges, the caption highlight and the highlighted row of the flow
+    signals table are neutralised through a single `body.no-current-week` switch;
+  - the chart legends dedicated to the current week are hidden;
+  - the remaining static labels that still said "current week" (lead / cycle notes,
+    creations-per-day title and legend) now state the reference week's date.
+  No calculation rule changed: only the rendering of a window with no current week.
+
 ## 1.26.0
 
 ### Changed

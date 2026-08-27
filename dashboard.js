@@ -97,6 +97,11 @@
   function applyWeekContext(r) {
     const cur = !!r.hasCurrentWeek;
     const label = r.weeks && r.weeks.length ? r.weeks[r.weeks.length - 1].label : "";
+    /* Single switch for the whole page: when no displayed week is the current
+     * week, `no-current-week` neutralises every amber/yellow "current week"
+     * marker (card borders, badges, highlighted rows). Charts are handled
+     * separately through `chartCurrentIndex()`. */
+    document.body.classList.toggle("no-current-week", !cur);
     document.querySelectorAll(".pill-current").forEach((el) => {
       el.textContent = cur ? "current" : label;
       el.title = cur
@@ -111,10 +116,24 @@
     document.querySelectorAll(".week-context-short").forEach((el) => {
       el.textContent = cur ? "the current week" : `the week of ${label}`;
     });
+    document.querySelectorAll(".week-context-plain").forEach((el) => {
+      el.textContent = cur ? "current week" : `week of ${label}`;
+    });
+    document.querySelectorAll(".week-context-cap").forEach((el) => {
+      el.textContent = cur ? "Current week" : `Week of ${label}`;
+    });
     document
       .querySelectorAll(".legend-current")
       .forEach((el) => el.classList.toggle("hidden", !cur));
     return { isCurrent: cur, label };
+  }
+
+  /* Index of the week that charts must paint with the "current week" colors.
+   * -1 when the window is entirely in the past: the last week of the window is
+   * the reference week for the key figures, but it is NOT the current week and
+   * must therefore keep the completed-week colors. */
+  function chartCurrentIndex(r) {
+    return r.hasCurrentWeek ? r.currentIndex : -1;
   }
 
   function showView(mode) {
@@ -201,7 +220,7 @@
     JKDCharts.groupedBarChart($("throughputChart"), {
       labels,
       series,
-      currentIndex: r.currentIndex,
+      currentIndex: chartCurrentIndex(r),
     });
     renderSignals(r);
     if (spOn) {
@@ -214,18 +233,18 @@
             currentClassName: "bar-done-current",
           },
         ],
-        currentIndex: r.currentIndex,
+        currentIndex: chartCurrentIndex(r),
       });
     }
     JKDCharts.lineChart($("leadChart"), {
       labels,
       values: r.leadWeekly,
-      currentIndex: r.currentIndex,
+      currentIndex: chartCurrentIndex(r),
     });
     JKDCharts.lineChart($("cycleChart"), {
       labels,
       values: r.cycleWeekly,
-      currentIndex: r.currentIndex,
+      currentIndex: chartCurrentIndex(r),
     });
 
     // Detail table — only tickets completed in the REFERENCE WEEK (the last
@@ -361,7 +380,7 @@
         { values: r.openCount, className: "bar-open", currentClassName: "bar-open-current" },
         { values: r.closeCount, className: "bar-closed", currentClassName: "bar-closed-current" },
       ],
-      currentIndex: r.currentIndex,
+      currentIndex: chartCurrentIndex(r),
     });
     // Creations per day of the week: current week vs previous week.
     // Weekdays (Mon→Fri) are always displayed; Saturday and Sunday only
@@ -381,7 +400,7 @@
     }
     daySeries.push({
       values: pickDays(r.createdPerDayCurrent),
-      className: "bar-done-current",
+      className: r.hasCurrentWeek ? "bar-done-current" : "bar-done",
     });
     JKDCharts.groupedBarChart($("runDailyChart"), {
       labels: dayIdx.map((d) => dayNames[d]),
@@ -522,7 +541,7 @@
         : `<td class="sig-zero">0</td>`;
     r.weeks.forEach((w, i) => {
       const tr = document.createElement("tr");
-      if (i === r.currentIndex) tr.className = "row-current";
+      if (r.hasCurrentWeek && i === r.currentIndex) tr.className = "row-current";
       const wl = w.current ? `${w.label} (current)` : w.label;
       tr.innerHTML =
         `<td>${wl}</td>` + cell(r.readyAdded[i]) + cell(r.backlogReturned[i]);

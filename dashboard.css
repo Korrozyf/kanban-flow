@@ -214,6 +214,21 @@ tr.row-current td:first-child { border-left: 3px solid var(--current); }
   text-transform: uppercase; letter-spacing: 0.4px;
 }
 
+/* Window entirely in the past: NO displayed week is the current week, so the
+   amber/yellow "current week" encoding must not be used anywhere. The
+   reference week (last week of the window) keeps a neutral styling and its
+   badge shows the week date instead of "current". */
+body.no-current-week .card-current { border-color: var(--border); }
+body.no-current-week .pill-current {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0;
+}
+body.no-current-week .cards-caption strong { color: var(--text); }
+body.no-current-week tr.row-current { background: transparent; }
+body.no-current-week tr.row-current td:first-child { border-left: 0; }
+
 .table-wrap { overflow-x: auto; margin-top: 12px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }

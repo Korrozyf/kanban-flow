@@ -44,6 +44,11 @@ open an issue if something looks wrong.
   the top-of-page **cards** (**build and run**), the figure stays in the normal text
   color (yellow is reserved for alerts): current-week status is conveyed by the
   "current" badge and the card border.
+  The warm encoding is applied **only to a week that really is the current week**.
+  When the window is entirely in the past, **no** week is painted with it: the
+  reference week (last week of the window) keeps the completed-week colors, its
+  badges show the week date instead of "current", the current-week chart legends
+  disappear, and every label states the week date rather than "current week".
 - **Story points (per-team option)**: if the *"Track story points"* option is enabled
   for a build team, the dashboard adds a **card** "Delivered story points" (current
   week), a **weekly chart** below the throughput, and a **"Story points" column** in
