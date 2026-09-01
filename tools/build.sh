@@ -63,7 +63,7 @@ zip -qr "$ZIP" "${FILES[@]}" -x '*.DS_Store'
 cp "$ZIP" "$XPI"
 
 COUNT="$(unzip -Z1 "$ZIP" | grep -vc '/$' || true)"
-echo "Version : $VERSION"
-echo "Files   : $COUNT"
-echo "Chrome  : $ROOT/$ZIP"
-echo "Firefox : $ROOT/$XPI"
+echo "Version: $VERSION"
+echo "Files:   $COUNT"
+echo "Chrome:  $ROOT/$ZIP"
+echo "Firefox: $ROOT/$XPI"

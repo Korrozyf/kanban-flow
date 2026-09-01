@@ -6,6 +6,23 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.26.2
+
+### Documentation
+- **New `docs/METRICS.md`: full reference of the queries and calculations behind every
+  indicator**, in build and in run. For each indicator: the exact JQL sent to JIRA
+  (with both-sided bounds and the optional issue-type / additional-JQL clauses), the
+  fields retrieved, the step-by-step calculation, the comparison base used by the
+  trend badge, and the settings that change the result.
+  Also documented: the seven REST endpoints used and when each is called, the window
+  built from the start date (including the "window entirely in the past" case), the
+  reconstruction of ticket dates from the changelog, the re-anchoring of the
+  configurable counting windows week by week, the "same elapsed duration" comparison
+  bases, the colour thresholds, and a settings-to-indicator cross-reference table.
+- `README.md`: the "Metric definitions" section now points to that reference, and the
+  file tree lists it.
+- `docs/INSTALLATION.md`: link to the reference from the first-time setup section.
+
 ## 1.26.1
 
 ### Fixed

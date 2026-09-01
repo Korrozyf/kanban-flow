@@ -87,6 +87,11 @@ open an issue if something looks wrong.
 
 ## Metric definitions
 
+> **Full reference:** [`docs/METRICS.md`](docs/METRICS.md) details, indicator by
+> indicator, the **exact JQL queries** sent to JIRA, the **fields** retrieved, the
+> **step-by-step calculation**, and **which of your settings changes what**. The tables
+> below are the summary.
+
 For each ticket completed in the analyzed window:
 
 | Metric | Calculation |
@@ -349,6 +354,7 @@ jira-kanban-dashboard/
 │   └── build.sh           # builds dist/*.zip (Chrome) and dist/*.xpi (Firefox)
 ├── docs/
 │   ├── INSTALLATION.md    # user guide: install, configure, update
+│   ├── METRICS.md         # queries + calculations behind every indicator
 │   ├── PUBLICATION.md     # maintainer guide: releases + auto-update options
 │   └── updates.json       # Firefox self-hosted update manifest template
 ├── .github/workflows/

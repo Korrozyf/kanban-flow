@@ -68,7 +68,9 @@ Two cases, depending on how the version was published.
 3. Add your teams (JIRA project key, Build or Run mode, exact status names).
 4. **Save**, then open the dashboard.
 
-Every setting is documented in the [README](../README.md).
+Every setting is documented in the [README](../README.md). To know exactly what each
+figure means — the JQL sent to JIRA, the calculation, and which setting changes it —
+see the [metrics reference](METRICS.md).
 
 ---
 
