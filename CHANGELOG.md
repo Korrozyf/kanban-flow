@@ -6,6 +6,17 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.26.3
+
+### Packaging
+- **The `docs/` folder is now shipped inside the distributed packages** (`.zip` and
+  `.xpi`). A user who only has the archive can read the full documentation offline:
+  `docs/INSTALLATION.md`, `docs/METRICS.md` and `docs/PUBLICATION.md`. The links from
+  `README.md` to `docs/*.md` now resolve inside the unpacked folder, not only on GitHub.
+- `docs/updates.json` stays out of the package: it is a maintainer template (Firefox
+  self-hosted update manifest), not user documentation.
+- No code, screen or calculation rule changed.
+
 ## 1.26.2
 
 ### Documentation

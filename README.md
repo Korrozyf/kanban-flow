@@ -352,7 +352,7 @@ jira-kanban-dashboard/
 ├── icons/
 ├── tools/
 │   └── build.sh           # builds dist/*.zip (Chrome) and dist/*.xpi (Firefox)
-├── docs/
+├── docs/                  # shipped inside the packages (except updates.json)
 │   ├── INSTALLATION.md    # user guide: install, configure, update
 │   ├── METRICS.md         # queries + calculations behind every indicator
 │   ├── PUBLICATION.md     # maintainer guide: releases + auto-update options

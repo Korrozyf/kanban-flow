@@ -21,8 +21,10 @@ if [[ -z "$VERSION" ]]; then
   exit 1
 fi
 
-# Files shipped inside the extension (everything else belongs to the repository,
-# not to the product itself).
+# Files shipped inside the extension. The docs/ folder is included so that a user
+# who only has the archive still has the full documentation offline, and so that
+# the README links to docs/*.md resolve inside the unpacked folder.
+# Everything else belongs to the repository, not to the product itself.
 FILES=(
   manifest.json
   background.js
@@ -38,6 +40,7 @@ FILES=(
   CHANGELOG.md
   LICENSE
   THIRD-PARTY.md
+  docs
 )
 
 for f in "${FILES[@]}"; do
@@ -59,7 +62,9 @@ mkdir -p dist
 ZIP="dist/kanban-flow-${VERSION}.zip"
 XPI="dist/kanban-flow-${VERSION}.xpi"
 
-zip -qr "$ZIP" "${FILES[@]}" -x '*.DS_Store'
+# docs/updates.json is a maintainer template (Firefox self-hosted update manifest),
+# not user documentation: it stays out of the package.
+zip -qr "$ZIP" "${FILES[@]}" -x '*.DS_Store' 'docs/updates.json'
 cp "$ZIP" "$XPI"
 
 COUNT="$(unzip -Z1 "$ZIP" | grep -vc '/$' || true)"
