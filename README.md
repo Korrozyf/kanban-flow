@@ -64,6 +64,9 @@ open an issue if something looks wrong.
   Friday, **configurable**), with a ⚠ alert when there are any. The current week is
   highlighted (yellow row) and a summary shows whether there were additions / removals
   and how many.
+- **Issue types counted (per team, both modes)**: restrict every query to the types you
+  track. A *Load types from JIRA* button lists the project's real type names as
+  checkboxes, so there is no typo, casing or language problem. Empty = all types.
 - **Configurable counting windows** (global setting): day and hours of the "committed"
   window and the "additions / removals" window. Labels shown in the dashboard follow
   the chosen values automatically.
@@ -83,7 +86,8 @@ open an issue if something looks wrong.
   *start of work* (cycle time) and the *end* (throughput / lead / cycle).
 - Collapsible list of tickets completed **in the current week** + the JQL used
   (calculation transparency).
-- 100% local: credentials and token stored in the browser, no third-party server.
+- 100% local: credentials and token stored in the browser, no third-party server, no
+  telemetry — see [Security and data handling](#security-and-data-handling).
 
 ## Metric definitions
 
@@ -277,6 +281,51 @@ Steps (~1 minute):
 > the same page if needed. The token's permissions are those of your account: you need
 > read access to your teams' projects.
 
+## Security and data handling
+
+The extension holds a credential that is equivalent to your JIRA password, so here is
+exactly what it does with it. Everything below is verifiable in the source — there is
+no build step and no minified code except the vendored `html2canvas`.
+
+**Where the token lives.** In `storage.local`, i.e. the browser profile of the machine
+where you installed the extension. It is **not** encrypted (no browser API offers
+that to an extension) and it is readable by anyone with access to your unlocked user
+session, exactly like a password saved in the browser. It is never copied anywhere
+else: no file, no clipboard, no log.
+
+**Where it is sent.** Only to your own JIRA site, in the `Authorization: Basic` header,
+over HTTPS. The site URL is **checked against an allow-list** before any request is
+built: `https://` + a host under `atlassian.net`. A URL that is `http://`, points at
+another domain, or uses a `javascript:`/`data:` scheme is refused with an explicit
+message. This is a deliberate safety net: a typo, a link pasted from a phishing
+e-mail, or a tampered settings file cannot make the extension send your token to a
+host you did not intend.
+
+**What leaves the browser.** Nothing but those JIRA calls. No analytics, no telemetry,
+no error reporting, no third-party script, no remote font: the charts are homegrown SVG
+and `html2canvas` is vendored locally (byte-identical to the upstream 1.4.1 release).
+The image export is produced in-page and saved through a `Blob` + `download` link.
+
+**Permissions.** `storage` and `https://*.atlassian.net/*`. Nothing else — no `tabs`,
+no `<all_urls>`, no `downloads`, no content script injected into your pages. The
+extension only runs on its own two pages, and requests use `credentials: "omit"` so
+your JIRA session cookies are never involved.
+
+**Untrusted content.** Ticket summaries, statuses, priorities and assignee names come
+from JIRA and are treated as untrusted: they are HTML-escaped before being inserted in
+the tables, as are ticket keys and links. Extension pages also run under an explicit
+`script-src 'self'` policy, so no inline or remote script can execute.
+
+**Exports.** The settings export excludes the API token unless you tick the box. The
+image export contains only what is on screen (team name, mode, period, figures) —
+never the URL, the e-mail or the token. `.gitignore` blocks settings exports from being
+committed by accident.
+
+**Recommended practice.** Use a token dedicated to this extension with an expiry date,
+so you can revoke it without affecting anything else; the token inherits your account's
+permissions, so prefer an account that only needs read access to the relevant projects.
+When reporting a bug, never paste your token.
+
 ## Configuration
 
 1. Open ⚙ **Settings** (button in the dashboard).
@@ -319,8 +368,9 @@ Steps (~1 minute):
 - JIRA API: modern endpoint `POST /rest/api/3/search/jql` (`nextPageToken` pagination),
   + `/rest/api/3/issue/{key}/changelog` as a fallback if the changelog is truncated,
   `GET /rest/api/3/priority` (site priority order), `GET /rest/api/3/field` (story
-  points field detection), and `GET /rest/api/3/issue/{key}/comment` (first comment,
-  Run mode). **Basic** authentication (email + API token).
+  points field detection), `GET /rest/api/3/issue/{key}/comment` (first comment,
+  Run mode) and `GET /rest/api/3/project/{key}` (issue type list, settings page).
+  **Basic** authentication (email + API token).
 - Cross-origin requests to `*.atlassian.net` work thanks to the extension's
   `host_permissions` (a clean CORS workaround, impossible for a plain web page).
 - Homegrown SVG charts, **no third-party network calls**.
@@ -343,7 +393,7 @@ jira-kanban-dashboard/
 ├── options.html/.css/.js  # settings (connection, preferences, teams)
 ├── lib/
 │   ├── store.js           # config in chrome.storage.local + JSON export/import
-│   ├── jira.js            # JIRA Cloud REST client
+│   ├── jira.js            # JIRA Cloud REST client (https://*.atlassian.net allow-list)
 │   ├── metrics.js         # build engine (throughput/lead/cycle/signals/story points)
 │   │                     # + run engine (open/closed/created/resolution), Mon→Sun weeks
 │   ├── charts.js          # SVG charts

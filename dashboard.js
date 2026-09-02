@@ -256,7 +256,7 @@
       const tr = document.createElement("tr");
       const doneStr = d.doneDate.toLocaleDateString("en-GB");
       tr.innerHTML =
-        `<td><a href="${d.url}" target="_blank" rel="noopener">${d.key}</a></td>` +
+        `<td><a href="${escapeHtml(d.url)}" target="_blank" rel="noopener">${escapeHtml(d.key)}</a></td>` +
         `<td>${escapeHtml(d.summary || "")}</td>` +
         `<td>${d.week}</td>` +
         `<td>${doneStr}</td>` +
@@ -434,7 +434,7 @@
     };
     // Same layout/formatting for the board list and the backlog list.
     const openRow = (t) =>
-      `<td><a href="${t.url}" target="_blank" rel="noopener">${t.key}</a></td>` +
+      `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
       `<td>${escapeHtml(t.summary)}</td>` +
       `<td>${escapeHtml(t.status || "")}</td>` +
       `<td>${escapeHtml(t.priority || "–")}</td>` +
@@ -470,7 +470,7 @@
         ? fmtDate(t.closedAt) + (t.closedAtApprox ? " ~" : "")
         : "–";
       tr.innerHTML =
-        `<td><a href="${t.url}" target="_blank" rel="noopener">${t.key}</a></td>` +
+        `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
         `<td>${escapeHtml(t.status || "")}</td>` +
         `<td>${escapeHtml(t.priority || "–")}</td>` +
@@ -488,7 +488,7 @@
     r.unassignedList.forEach((t) => {
       const tr = document.createElement("tr");
       tr.innerHTML =
-        `<td><a href="${t.url}" target="_blank" rel="noopener">${t.key}</a></td>` +
+        `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
         `<td>${escapeHtml(t.status || "")}</td>` +
         `<td>${escapeHtml(t.priority || "–")}</td>` +
@@ -503,7 +503,7 @@
     r.maxPriorityList.forEach((t) => {
       const tr = document.createElement("tr");
       tr.innerHTML =
-        `<td><a href="${t.url}" target="_blank" rel="noopener">${t.key}</a></td>` +
+        `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
         `<td>${escapeHtml(t.priority || "–")}</td>` +
         `<td>${fmtDate(t.created)}</td>` +

@@ -60,7 +60,9 @@ Two cases, depending on how the version was published.
 
 1. Right-click the icon → **Options** (or the ⚙ button in the dashboard).
 2. Fill in:
-   - **JIRA URL**: `https://your-company.atlassian.net`
+   - **JIRA URL**: `https://your-company.atlassian.net` (only `https` addresses under
+     `atlassian.net` are accepted — this is a safety net so your token can never be
+     sent to another host)
    - **E-mail**: your Atlassian sign-in address
    - **API token**: create one at
      <https://id.atlassian.com/manage-profile/security/api-tokens> → *Create API token*.
@@ -70,7 +72,9 @@ Two cases, depending on how the version was published.
 
 Every setting is documented in the [README](../README.md). To know exactly what each
 figure means — the JQL sent to JIRA, the calculation, and which setting changes it —
-see the [metrics reference](METRICS.md).
+see the [metrics reference](METRICS.md). What the extension does with your API token,
+what leaves the browser and what does not, is described in
+[Security and data handling](../README.md#security-and-data-handling).
 
 ---
 

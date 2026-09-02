@@ -6,6 +6,46 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.27.0
+
+### Security review (hardening)
+Full read-through of the add-on looking for secret exposure. No leak was found — the
+API token was never logged, never sent anywhere but JIRA, and never included in the
+image export or in the settings export unless explicitly requested. Three hardening
+measures were added anyway.
+
+- **JIRA site URL allow-list**: the URL is now validated **before** any request is
+  built. Only `https://` addresses on an `atlassian.net` host are accepted; `http://`
+  (token in clear text), any other domain (token exfiltration) and `javascript:` /
+  `data:` schemes are refused with an explicit message. This matches what the manifest
+  declares in `host_permissions`, so no working setup is affected — but a typo, a link
+  pasted from a phishing e-mail or a tampered settings file can no longer point the
+  extension, and your credentials, at another host.
+- **HTML escaping of ticket keys and links** in every table. Summaries, statuses,
+  priorities and assignee names were already escaped; keys and `href` values were
+  interpolated raw. JIRA keys cannot realistically contain markup, but the value is
+  built from the configured site URL, so it is now escaped too.
+- **Explicit content security policy** for extension pages
+  (`script-src 'self'; object-src 'self'`). This is already the Manifest V3 default;
+  stating it makes the intent auditable and immune to a default change.
+
+Verified: `lib/html2canvas.min.js` is **byte-identical** to the upstream html2canvas
+1.4.1 release (sha256 `e87e5507…eab8cb`); the Git history contains no token or key;
+requested permissions remain `storage` + `https://*.atlassian.net/*` with no content
+script; requests keep `credentials: "omit"`, so JIRA session cookies are never used.
+
+### Documentation
+- New README section **Security and data handling**: where the token is stored (and
+  that `storage.local` is not encrypted), where it is sent, what leaves the browser
+  (nothing but JIRA calls — no telemetry, no third-party script), permissions,
+  handling of untrusted JIRA content, what the exports do and do not contain, and
+  recommended token practice.
+- README: `GET /rest/api/3/project/{key}` added to the list of endpoints used (issue
+  type loading on the settings page); **Issue types counted** added to the feature list
+  (it was only documented in the configuration walkthrough).
+- `docs/INSTALLATION.md`: the URL allow-list is mentioned where the URL is entered, and
+  the security section is linked from the setup step.
+
 ## 1.26.3
 
 ### Packaging
