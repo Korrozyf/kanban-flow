@@ -3,6 +3,8 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   let projectRowSeq = 0;
+  // Period choices are edited on the dashboard; settings must preserve them.
+  let periodPrefs = { buildPeriodMode: "recent", runPeriodMode: "recent" };
 
   function parseList(str) {
     return String(str || "")
@@ -213,6 +215,8 @@
       email: $("email").value.trim(),
       token: $("token").value,
       startDate: $("startDate").value || "",
+      buildPeriodMode: periodPrefs.buildPeriodMode,
+      runPeriodMode: periodPrefs.runPeriodMode,
       aggregate: $("aggregate").value,
       stableThresholdPct: Math.max(0, parseInt($("threshold").value, 10) || 10),
       engageDay: parseInt($("engageDay").value, 10) || 0,
@@ -262,6 +266,10 @@
 
   /* Fills the form from a config (init and import). */
   function applyConfig(cfg) {
+    periodPrefs = {
+      buildPeriodMode: cfg.buildPeriodMode === "complete" ? "complete" : "recent",
+      runPeriodMode: cfg.runPeriodMode === "complete" ? "complete" : "recent",
+    };
     $("baseUrl").value = cfg.baseUrl || "";
     $("email").value = cfg.email || "";
     $("token").value = cfg.token || "";

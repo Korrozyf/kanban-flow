@@ -7,6 +7,10 @@
   let cfg = null;
   // Last rendered result: used to name and title the exported image.
   let lastRender = null;
+  let loadedResult = null;
+  let loadedProject = null;
+  let loadedMode = null;
+  let selectedWeekIndex = -1;
 
   function setStatus(msg, kind) {
     const panel = $("statusPanel");
@@ -69,72 +73,106 @@
     });
   }
 
-  // Info banner about the analysed window / the comparison basis.
-  function renderComparisonNote(r) {
-    const info = $("comparisonNote");
+  function periodModeFor(mode) {
+    return cfg[mode === "run" ? "runPeriodMode" : "buildPeriodMode"] === "complete"
+      ? "complete" : "recent";
+  }
+
+  function setupPeriodControls(mode, r) {
+    const prefix = mode === "run" ? "run" : "build";
+    const active = periodModeFor(mode);
+    document.querySelectorAll(`input[name="${prefix}Period"]`).forEach((radio) => {
+      radio.checked = radio.value === active;
+    });
+    const select = $(`${prefix}WeekSelect`);
+    select.innerHTML = "";
+    r.weeks.forEach((week, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = `${week.label}${week.current ? " — current" : ""}`;
+      select.appendChild(option);
+    });
+    select.value = String(selectedWeekIndex);
+  }
+
+  function renderComparisonNote(r, index, mode) {
+    const info = $(`${mode === "run" ? "run" : "build"}PeriodWarning`);
     const notes = [];
-    if (!r.hasComparison) {
+    if (r.missingStartDate) {
+      notes.push("Complete needs a start date; the five latest weeks are shown instead.");
+    }
+    if (r.truncated && r.weeks.length) {
       notes.push(
-        "ℹ The start date falls on the current week: no previous week, " +
-          "so no trend comparison."
+        `Complete is limited to the first 52 weeks (${r.weeks[0].label} → ` +
+        `${r.weeks[r.weeks.length - 1].label}); more recent weeks are not loaded.`
       );
     }
-    if (!r.hasCurrentWeek && r.weeks && r.weeks.length) {
-      const first = r.weeks[0].label;
-      const last = r.weeks[r.weeks.length - 1].label;
-      notes.push(
-        `ℹ The 5-week window from the start date (${first} → ${last}) is entirely ` +
-          `in the past: the key figures describe the week of ${last}, not the ` +
-          "current week."
-      );
+    if (index === 0) notes.push("No previous loaded week is available for trend comparison.");
+    const snapshot = mode === "run" && r.snapshots ? r.snapshots[index] : null;
+    if (mode === "run" && !r.weeks[index].current &&
+        (r.historicalDataIncomplete || (snapshot && snapshot.statusUnavailableCount))) {
+      notes.push("Some complete status histories could not be reconstructed; affected historical values are unavailable and excluded from reconstructed stocks.");
+    }
+    if (!r.weeks[index].current) {
+      notes.push(`The key figures and ticket lists describe the historical week of ${r.weeks[index].label}.`);
     }
     info.classList.toggle("hidden", !notes.length);
     info.textContent = notes.join(" ");
   }
 
-  /* The reference week of the key figures is the LAST week of the window. It is
-   * the current week only when the window reaches today; otherwise the whole
-   * window sits in the past and the wording must not claim "current week". */
-  function applyWeekContext(r) {
-    const cur = !!r.hasCurrentWeek;
-    const label = r.weeks && r.weeks.length ? r.weeks[r.weeks.length - 1].label : "";
-    /* Single switch for the whole page: when no displayed week is the current
-     * week, `no-current-week` neutralises every amber/yellow "current week"
-     * marker (card borders, badges, highlighted rows). Charts are handled
-     * separately through `chartCurrentIndex()`. */
+  function applyWeekContext(r, index) {
+    const week = r.weeks[index];
+    const cur = !!week.current;
+    const label = week.label;
     document.body.classList.toggle("no-current-week", !cur);
     document.querySelectorAll(".pill-current").forEach((el) => {
-      el.textContent = cur ? "current" : label;
-      el.title = cur
-        ? "Current week (incomplete)"
-        : `Week of ${label} — last week of the window`;
+      el.textContent = cur ? "current" : `selected: ${label}`;
+      el.title = cur ? "Current week (incomplete)" : `Selected historical week of ${label}`;
     });
     document.querySelectorAll(".week-context").forEach((el) => {
       el.innerHTML = cur
         ? 'the <strong>current week</strong> ("current" badge)'
-        : `the <strong>week of ${label}</strong> (last week of the window)`;
+        : `the <strong>selected week of ${label}</strong>`;
     });
     document.querySelectorAll(".week-context-short").forEach((el) => {
-      el.textContent = cur ? "the current week" : `the week of ${label}`;
+      el.textContent = cur ? "the current week" : `the selected week of ${label}`;
     });
     document.querySelectorAll(".week-context-plain").forEach((el) => {
-      el.textContent = cur ? "current week" : `week of ${label}`;
+      el.textContent = cur ? "current week" : `selected week of ${label}`;
     });
     document.querySelectorAll(".week-context-cap").forEach((el) => {
-      el.textContent = cur ? "Current week" : `Week of ${label}`;
+      el.textContent = cur ? "Current week" : `Selected week of ${label}`;
     });
-    document
-      .querySelectorAll(".legend-current")
-      .forEach((el) => el.classList.toggle("hidden", !cur));
+    document.querySelectorAll(".legend-current").forEach((el) => {
+      el.classList.toggle("hidden", r.currentWeekIndex == null || r.currentWeekIndex < 0);
+    });
     return { isCurrent: cur, label };
   }
 
-  /* Index of the week that charts must paint with the "current week" colors.
-   * -1 when the window is entirely in the past: the last week of the window is
-   * the reference week for the key figures, but it is NOT the current week and
-   * must therefore keep the completed-week colors. */
   function chartCurrentIndex(r) {
-    return r.hasCurrentWeek ? r.currentIndex : -1;
+    return r.currentWeekIndex == null ? (r.hasCurrentWeek ? r.currentIndex : -1) : r.currentWeekIndex;
+  }
+
+  function chartOptions(r, index) {
+    return {
+      currentIndex: chartCurrentIndex(r),
+      selectedIndex: index,
+      minBandWidth: r.periodMode === "complete" ? 46 : null,
+    };
+  }
+
+  function setChartScrolling(r) {
+    document.querySelectorAll(".chart-box").forEach((box) => {
+      const weekly = !box.contains($("runDailyChart"));
+      const scrollable = r.periodMode === "complete" && weekly;
+      box.classList.toggle("chart-scroll", scrollable);
+      box.tabIndex = scrollable ? 0 : -1;
+      if (scrollable) {
+        box.setAttribute("aria-label", `Scrollable ${r.weeks.length}-week chart`);
+      } else {
+        box.removeAttribute("aria-label");
+      }
+    });
   }
 
   function showView(mode) {
@@ -142,7 +180,7 @@
     $("runView").classList.toggle("hidden", mode !== "run");
   }
 
-  function renderResult(project, r) {
+  function renderResult(project, r, index) {
     hideStatus();
     $("dashboard").classList.remove("hidden");
     showView("build");
@@ -152,17 +190,18 @@
     $("leadAggLabel").textContent = aggLabel;
     $("cycleAggLabel").textContent = aggLabel;
 
-    renderComparisonNote(r);
-    const ctx = applyWeekContext(r);
+    renderComparisonNote(r, index, "build");
+    const ctx = applyWeekContext(r, index);
+    setChartScrolling(r);
 
     // Cards
-    const curLabel = last(r.weeks).label;
+    const curLabel = r.weeks[index].label;
     const weekPhrase = ctx.isCurrent
       ? `current week of ${curLabel} (incomplete)`
       : `week of ${curLabel}`;
-    $("thrValue").textContent = last(r.throughput);
+    $("thrValue").textContent = r.throughput[index];
     $("thrNote").textContent = `completed tickets — ${weekPhrase}`;
-    $("engageValue").textContent = r.hasEngage ? last(r.throughputEngage) : "–";
+    $("engageValue").textContent = r.hasEngage ? r.throughputEngage[index] : "–";
     $("engageNote").textContent = r.hasEngage
       ? `tickets on the board (${r.engageLabel}) — week of ${curLabel}`
       : "Set the team's board statuses (⚙ Settings).";
@@ -175,11 +214,13 @@
       .querySelectorAll("#detailTable .sp-col")
       .forEach((th) => th.classList.toggle("hidden", !spOn));
     if (spOn) {
-      $("spValue").textContent = fmtPoints(last(r.storyPointsWeekly));
+      $("spValue").textContent = fmtPoints(r.storyPointsWeekly[index]);
       $("spNote").textContent =
-        `points delivered on ${last(r.storyPointsCounts)} estimated ticket(s) — ` +
+        `points delivered on ${r.storyPointsCounts[index]} estimated ticket(s) — ` +
         weekPhrase;
-      trendBadge("spTrend", r.trends.storyPoints);
+      trendBadge("spTrend", JKDMetrics.computeTrend(
+        r.storyPointsWeekly, cfg.stableThresholdPct, true, index
+      ));
     } else if (r.trackStoryPoints) {
       // Option enabled but field not found: flagged without blocking.
       $("spCard").classList.remove("hidden");
@@ -189,8 +230,8 @@
       trendBadge("spTrend", { direction: "na", pct: null, good: null });
     }
 
-    $("leadValue").textContent = fmtDays(last(r.leadWeekly));
-    $("cycleValue").textContent = fmtDays(last(r.cycleWeekly));
+    $("leadValue").textContent = fmtDays(r.leadWeekly[index]);
+    $("cycleValue").textContent = fmtDays(r.cycleWeekly[index]);
 
     if ($("engageLegend")) {
       $("engageLegend").textContent = r.engageLabel
@@ -198,10 +239,12 @@
         : "Committed";
     }
 
-    trendBadge("thrTrend", r.trends.throughput);
-    trendBadge("engageTrend", r.hasEngage ? r.trends.engage : { direction: "na", pct: null, good: null });
-    trendBadge("leadTrend", r.trends.lead);
-    trendBadge("cycleTrend", r.trends.cycle);
+    trendBadge("thrTrend", JKDMetrics.computeTrend(r.throughput, cfg.stableThresholdPct, true, index));
+    trendBadge("engageTrend", r.hasEngage
+      ? JKDMetrics.computeTrend(r.throughputEngage, cfg.stableThresholdPct, true, index)
+      : { direction: "na", pct: null, good: null });
+    trendBadge("leadTrend", JKDMetrics.computeTrend(r.leadWeekly, cfg.stableThresholdPct, false, index));
+    trendBadge("cycleTrend", JKDMetrics.computeTrend(r.cycleWeekly, cfg.stableThresholdPct, false, index));
 
     const labels = r.weeks.map((w) => w.label);
     // Committed + delivered throughput on the same chart (grouped bars).
@@ -224,9 +267,9 @@
       title: "Committed and delivered throughput per week",
       labels,
       series,
-      currentIndex: chartCurrentIndex(r),
+      ...chartOptions(r, index),
     });
-    renderSignals(r);
+    renderSignals(r, index);
     if (spOn) {
       JKDCharts.groupedBarChart($("spChart"), {
         title: "Delivered story points per week",
@@ -239,7 +282,7 @@
             currentClassName: "bar-done-current",
           },
         ],
-        currentIndex: chartCurrentIndex(r),
+        ...chartOptions(r, index),
       });
     }
     JKDCharts.lineChart($("leadChart"), {
@@ -248,7 +291,7 @@
       unit: "days",
       labels,
       values: r.leadWeekly,
-      currentIndex: chartCurrentIndex(r),
+      ...chartOptions(r, index),
     });
     JKDCharts.lineChart($("cycleChart"), {
       title: "Cycle time per week",
@@ -256,14 +299,13 @@
       unit: "days",
       labels,
       values: r.cycleWeekly,
-      currentIndex: chartCurrentIndex(r),
+      ...chartOptions(r, index),
     });
 
-    // Detail table — only tickets completed in the REFERENCE WEEK (the last
-    // week of the window, i.e. the current week when the window reaches today).
+    // Detail table — only tickets completed in the selected reference week.
     const tbody = $("detailTable").querySelector("tbody");
     tbody.innerHTML = "";
-    const curDetails = r.details.filter((d) => d.weekIndex === r.currentIndex);
+    const curDetails = r.details.filter((d) => d.weekIndex === index);
     curDetails.forEach((d) => {
       const tr = document.createElement("tr");
       const doneStr = d.doneDate.toLocaleDateString("en-GB");
@@ -324,40 +366,42 @@
     );
   }
 
-  function renderRunResult(project, r) {
+  function renderRunResult(project, base, index) {
+    const r = Object.assign({}, base, base.snapshots[index]);
     hideStatus();
     $("dashboard").classList.remove("hidden");
     showView("run");
-    renderComparisonNote(r);
-    applyWeekContext(r);
+    renderComparisonNote(base, index, "run");
+    const ctx = applyWeekContext(base, index);
+    setChartScrolling(base);
 
-    const last = (arr) => arr[arr.length - 1];
-    const curLabel = last(r.weeks).label;
+    const curLabel = base.weeks[index].label;
 
     // Cards
     $("runOpenValue").textContent = r.openNow;
+    const openWhen = ctx.isCurrent ? "as of now" : `at the end of the week of ${curLabel}`;
     $("runOpenNote").textContent =
       r.openAtPrevWeekEnd == null
-        ? "not resolved as of today — no previous week to compare"
-        : `not resolved as of today — vs ${r.openAtPrevWeekEnd} still open at the end of the previous week`;
+        ? `open ${openWhen} — no previous week to compare`
+        : `open ${openWhen} — vs ${r.openAtPrevWeekEnd} open at the previous week cut-off`;
     $("runCloseValue").textContent = r.closedThisWeek;
     $("runCloseNote").textContent =
       r.closedPrevSameElapsed == null
         ? `closed in the week of ${curLabel} — no previous week to compare`
-        : `closed in the week of ${curLabel} — vs ${r.closedPrevSameElapsed} over the same period ` +
-          `of the previous week (${r.elapsedHours} h elapsed)` +
-          (r.closedPrevWeek == null
-            ? ""
-            : ` — ${r.closedPrevWeek} over the entire previous week`);
+        : ctx.isCurrent
+          ? `closed in the week of ${curLabel} — vs ${r.closedPrevSameElapsed} over the same period ` +
+            `of the previous week (${r.elapsedHours} h elapsed)` +
+            (r.closedPrevWeek == null ? "" : ` — ${r.closedPrevWeek} over the entire previous week`)
+          : `closed in the week of ${curLabel} — vs ${r.closedPrevSameElapsed} in the previous week`;
     $("runCreatedValue").textContent = r.createdThisWeek;
     $("runCreatedNote").textContent =
       r.createdPrevSameElapsed == null
         ? `created in the week of ${curLabel} — no previous week to compare`
-        : `created in the week of ${curLabel} — vs ${r.createdPrevSameElapsed} over the same period ` +
-          `of the previous week (${r.elapsedHours} h elapsed)` +
-          (r.createdPrevWeek == null
-            ? ""
-            : ` — ${r.createdPrevWeek} over the entire previous week`);
+        : ctx.isCurrent
+          ? `created in the week of ${curLabel} — vs ${r.createdPrevSameElapsed} over the same period ` +
+            `of the previous week (${r.elapsedHours} h elapsed)` +
+            (r.createdPrevWeek == null ? "" : ` — ${r.createdPrevWeek} over the entire previous week`)
+          : `created in the week of ${curLabel} — vs ${r.createdPrevSameElapsed} in the previous week`;
 
     // Average resolution time of tickets closed this week. Same colour
     // coding as the duration columns in the lists: dot + tooltip, with the
@@ -376,8 +420,10 @@
           `in the week of ${curLabel}` +
           (r.avgResolutionPrevSameElapsed == null
             ? " — no previous week to compare"
-            : ` — vs ${fmtDuration(r.avgResolutionPrevSameElapsed)} over the same period ` +
-              `of the previous week (${r.elapsedHours} h elapsed)`);
+            : ctx.isCurrent
+              ? ` — vs ${fmtDuration(r.avgResolutionPrevSameElapsed)} over the same period ` +
+                `of the previous week (${r.elapsedHours} h elapsed)`
+              : ` — vs ${fmtDuration(r.avgResolutionPrevSameElapsed)} in the previous week`);
 
     trendBadge("runOpenTrend", r.trends.open);
     trendBadge("runCloseTrend", r.trends.close);
@@ -393,12 +439,11 @@
         { label: "Opened", values: r.openCount, className: "bar-open", currentClassName: "bar-open-current" },
         { label: "Closed", values: r.closeCount, className: "bar-closed", currentClassName: "bar-closed-current" },
       ],
-      currentIndex: chartCurrentIndex(r),
+      ...chartOptions(base, index),
     });
-    // Creations per day of the week: current week vs previous week.
+    // Creations per day: selected reference week vs previous loaded week.
     // Weekdays (Mon→Fri) are always displayed; Saturday and Sunday only
-    // appear if they carry at least one creation (current week
-    // or previous week).
+    // appear if either compared week has at least one creation.
     const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     const dayIdx = [0, 1, 2, 3, 4];
     [5, 6].forEach((d) => {
@@ -412,9 +457,9 @@
       daySeries.push({ label: "Previous week", values: pickDays(r.createdPerDayPrev), className: "bar-open" });
     }
     daySeries.push({
-      label: r.hasCurrentWeek ? "Current week" : `Week of ${curLabel}`,
+      label: ctx.isCurrent ? "Current week" : `Week of ${curLabel}`,
       values: pickDays(r.createdPerDayCurrent),
-      className: r.hasCurrentWeek ? "bar-done-current" : "bar-done",
+      className: ctx.isCurrent ? "bar-done-current" : "bar-done",
     });
     JKDCharts.groupedBarChart($("runDailyChart"), {
       title: "Tickets created per day",
@@ -423,7 +468,7 @@
       currentIndex: -1,
     });
     const sum = (a) => a.reduce((x, y) => x + y, 0);
-    const dailyWhen = r.hasCurrentWeek
+    const dailyWhen = ctx.isCurrent
       ? `this week (${r.elapsedDays} day(s) elapsed)`
       : `in the week of ${curLabel}`;
     $("runDailyNote").textContent = r.createdPerDayPrev
@@ -437,7 +482,8 @@
     // Coloured age counters: green < 1 d, orange 1–2 d, red > 2 d.
     // Colour dot + tooltip: the information is never carried by colour
     // alone, and the text keeps the table's normal contrast.
-    const ageCell = (hours) => {
+    const ageCell = (hours, unavailable) => {
+      if (unavailable) return `<td title="Not reconstructable from the JIRA changelog">unavailable</td>`;
       const info = ageInfo(hours);
       if (!info) return `<td>–</td>`;
       const { cls, label } = info;
@@ -448,15 +494,17 @@
       );
     };
     // Same layout/formatting for the board list and the backlog list.
+    const historicalValue = (value, available, empty) =>
+      available === false ? "unavailable" : (value || empty);
     const openRow = (t) =>
       `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
       `<td>${escapeHtml(t.summary)}</td>` +
-      `<td>${escapeHtml(t.status || "")}</td>` +
-      `<td>${escapeHtml(t.priority || "–")}</td>` +
-      `<td>${escapeHtml(t.assignee || "— unassigned")}</td>` +
+      `<td>${escapeHtml(t.statusAvailable === false ? "unavailable" : (t.status || ""))}</td>` +
+      `<td>${escapeHtml(historicalValue(t.priority, t.priorityAvailable, "–"))}</td>` +
+      `<td>${escapeHtml(historicalValue(t.assignee, t.assigneeAvailable, "— unassigned"))}</td>` +
       `<td>${fmtDate(t.created)}</td>` +
       ageCell(t.hoursSinceCreated) +
-      ageCell(t.hoursSinceUpdated);
+      ageCell(t.hoursSinceUpdated, t.updatedAvailable === false);
     r.openList.forEach((t) => {
       const tr = document.createElement("tr");
       tr.innerHTML = openRow(t);
@@ -488,8 +536,8 @@
         `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
         `<td>${escapeHtml(t.status || "")}</td>` +
-        `<td>${escapeHtml(t.priority || "–")}</td>` +
-        `<td>${escapeHtml(t.assignee || "— unassigned")}</td>` +
+        `<td>${escapeHtml(historicalValue(t.priority, t.priorityAvailable, "–"))}</td>` +
+        `<td>${escapeHtml(historicalValue(t.assignee, t.assigneeAvailable, "— unassigned"))}</td>` +
         `<td>${fmtDate(t.created)}</td>` +
         `<td>${closedTxt}</td>` +
         ageCell(t.hoursOpenToClosed);
@@ -506,7 +554,7 @@
         `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
         `<td>${escapeHtml(t.status || "")}</td>` +
-        `<td>${escapeHtml(t.priority || "–")}</td>` +
+        `<td>${escapeHtml(historicalValue(t.priority, t.priorityAvailable, "–"))}</td>` +
         `<td>${fmtDate(t.created)}</td>`;
       unBody.appendChild(tr);
     });
@@ -520,10 +568,10 @@
       tr.innerHTML =
         `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
-        `<td>${escapeHtml(t.priority || "–")}</td>` +
+        `<td>${escapeHtml(historicalValue(t.priority, t.priorityAvailable, "–"))}</td>` +
         `<td>${fmtDate(t.created)}</td>` +
         ageCell(t.hoursToFirstComment) +
-        (t.resolved ? ageCell(t.hoursToResolution) : `<td>not resolved</td>`);
+        (t.hoursToResolution != null ? ageCell(t.hoursToResolution) : `<td>not resolved at cut-off</td>`);
       mpBody.appendChild(tr);
     });
     $("runMaxPrioCount").textContent = r.maxPriorityList.length;
@@ -534,7 +582,7 @@
       `updated ${new Date().toLocaleString("en-GB")}`;
   }
 
-  function renderSignals(r) {
+  function renderSignals(r, index) {
     const panel = $("signalsPanel");
     const tbody = $("signalsTable").querySelector("tbody");
     const note = $("currentSignals");
@@ -556,15 +604,16 @@
         : `<td class="sig-zero">0</td>`;
     r.weeks.forEach((w, i) => {
       const tr = document.createElement("tr");
-      if (r.hasCurrentWeek && i === r.currentIndex) tr.className = "row-current";
+      if (i === r.currentWeekIndex) tr.classList.add("row-current");
+      if (i === index) tr.classList.add("row-selected");
       const wl = w.current ? `${w.label} (current)` : w.label;
       tr.innerHTML =
         `<td>${wl}</td>` + cell(r.readyAdded[i]) + cell(r.backlogReturned[i]);
       tbody.appendChild(tr);
     });
     // Summary of the reference week (answers to "was there any, how many").
-    const ci = r.currentIndex;
-    const when = r.hasCurrentWeek ? "this week" : `in the week of ${r.weeks[ci].label}`;
+    const ci = index;
+    const when = r.weeks[ci].current ? "this week" : `in the selected week of ${r.weeks[ci].label}`;
     const added = r.readyAdded[ci];
     const back = r.backlogReturned[ci];
     const parts = [];
@@ -634,6 +683,35 @@
     }
   }
 
+  function renderSelectedWeek(index) {
+    if (!loadedResult || !loadedProject) return;
+    const max = loadedResult.weeks.length - 1;
+    selectedWeekIndex = Math.max(0, Math.min(max, Number(index)));
+    const prefix = loadedMode === "run" ? "run" : "build";
+    $(`${prefix}WeekSelect`).value = String(selectedWeekIndex);
+    if (loadedMode === "run") {
+      renderRunResult(loadedProject, loadedResult, selectedWeekIndex);
+    } else {
+      renderResult(loadedProject, loadedResult, selectedWeekIndex);
+    }
+    const week = loadedResult.weeks[selectedWeekIndex];
+    lastRender = {
+      project: loadedProject,
+      mode: loadedMode,
+      weeksLabel: `selected week ${week.label}; loaded range ` +
+        `${loadedResult.weeks[0].label} to ${loadedResult.weeks[max].label}`,
+    };
+  }
+
+  async function applyPeriod(mode) {
+    const prefix = mode === "run" ? "run" : "build";
+    const selected = document.querySelector(`input[name="${prefix}Period"]:checked`);
+    const key = mode === "run" ? "runPeriodMode" : "buildPeriodMode";
+    cfg[key] = selected && selected.value === "complete" ? "complete" : "recent";
+    await JKDStore.saveConfig(cfg);
+    await runAnalysis();
+  }
+
   async function runAnalysis() {
     const id = $("projectSelect").value;
     if (!id) {
@@ -680,16 +758,12 @@
         );
         return;
       }
-      if (isRun) renderRunResult(project, r);
-      else renderResult(project, r);
-      const w = r.weeks || [];
-      lastRender = {
-        project,
-        mode: isRun ? "run" : "build",
-        weeksLabel: w.length
-          ? `weeks from ${w[0].label} to ${w[w.length - 1].label}`
-          : "",
-      };
+      loadedResult = r;
+      loadedProject = project;
+      loadedMode = isRun ? "run" : "build";
+      selectedWeekIndex = r.weeks.length - 1;
+      setupPeriodControls(loadedMode, r);
+      renderSelectedWeek(selectedWeekIndex);
       setExportEnabled(true);
     } catch (e) {
       console.error(e);
@@ -720,6 +794,17 @@
         "error"
       );
     }
+
+    ["build", "run"].forEach((mode) => {
+      const prefix = mode;
+      document.querySelectorAll(`input[name="${prefix}Period"]`).forEach((radio) => {
+        radio.checked = radio.value === periodModeFor(mode);
+      });
+      $(`${prefix}PeriodApply`).addEventListener("click", () => applyPeriod(mode));
+      $(`${prefix}WeekSelect`).addEventListener("change", (event) => {
+        if (loadedMode === mode) renderSelectedWeek(event.target.value);
+      });
+    });
 
     $("projectSelect").addEventListener("change", runAnalysis);
     $("refreshBtn").addEventListener("click", async () => {

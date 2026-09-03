@@ -29,23 +29,21 @@ timestamps with an offset; they are parsed into local `Date` objects.
 (exclusive)**. Bounds are half-open `[start, end[`, so a ticket dated Monday 00:00 on
 the dot belongs to the week that *starts*, never to the one that ends.
 
-**Analysis window.** Driven by the **Start date** setting (`startDate`, legacy key
-`macrocycleStart`):
+**Analysis window.** Build and Run each remember an independent dashboard choice:
 
-- the window is the **week containing the start date plus the 4 following weeks**
-  (`WINDOW_WEEKS = 5`);
-- if the **current week falls inside** that period, the window stops there (fewer than
-  5 weeks may be displayed) and the current week is the reference week;
-- if the window is **entirely in the past**, all 5 weeks are displayed, **none** is
-  flagged as current, and the **last week of the window** becomes the reference week
-  for the KPI cards and trends;
-- if the start date is **in the future**, the dashboard says so and computes nothing;
-- if the start date is **empty**, the window falls back to the 5 weeks ending on the
-  current week.
+- **Last weeks** (`recent`, default) always loads exactly five weeks: the current week
+  and the four previous weeks. It does not use the configured start date.
+- **Complete** loads from the Monday of the configured start date through the current
+  week, but is capped at the **first 52 weeks** (`COMPLETE_WINDOW_WEEKS = 52`). The
+  range stays anchored at its start; if more history exists, recent weeks are excluded
+  and the dashboard announces the exact range and truncation.
+- Complete without a valid start date falls back to Last weeks and announces why.
+- The current week is marked only if it is actually present in the loaded range.
 
-**Reference week.** Called `currentIndex` in the code. It is the last week displayed.
-`hasCurrentWeek` tells whether that week really is the ongoing one; when it is not, the
-current-week colour code and wording are switched off across the whole page.
+**Reference week.** After each load, the final loaded week is selected. The user may
+then choose any loaded week without another JIRA request. `selectedIndex` drives KPI
+cards, trends and lists; `currentWeekIndex` separately identifies the true ongoing
+week. A selected historical week never receives the current-week wording or colours.
 
 **Daylight saving.** Week and day boundaries are computed in **calendar days**, never in
 fixed 24-hour slices. A week can be 167 h or 169 h long; using a fixed step would either
@@ -64,7 +62,8 @@ cause of counters stuck at zero.
 
 | Setting | Key | Used by |
 | --- | --- | --- |
-| Start date | `startDate` | Builds the 5-week window (both modes). Also **clamps** lead/cycle time (see §5.5). |
+| Start date | `startDate` | Anchors the Complete period (both modes). Also clamps lead/cycle time in Complete; Last weeks clamps no later than its first loaded week (see §5.5). |
+| Dashboard period | `buildPeriodMode`, `runPeriodMode` | Independent `recent` / `complete` choices, saved when **Apply** is pressed. |
 | Lead/cycle time aggregation | `aggregate` | `median` (default) or `average` for the weekly lead and cycle time series. |
 | "Stable" threshold (%) | `stableThresholdPct` | A week-over-week variation whose absolute value is ≤ this threshold is reported as *stable* instead of up/down. Default 10. |
 | JIRA story points field | `storyPointsField` | Forces the custom field id. Empty ⇒ auto-detection by field name. |
@@ -196,17 +195,19 @@ actual counting re-reads each ticket's changelog to apply the counting window.
 ```jql
 project = "KEY"
   AND labels IN ("run", "support")
-  AND (   (created >= "W0" AND created < "Wn")
-       OR (resolutiondate >= "W0" AND resolutiondate < "Wn")
-       OR resolution IS EMPTY )
+  AND created < "Wn"
+  AND (   created >= "W0"
+       OR resolution IS EMPTY
+       OR resolutiondate >= "W0"
+       OR status CHANGED TO ("Done", "Closed") AFTER "W0" )
   TYPES EXTRA
 ORDER BY created ASC
 ```
 
-The three OR branches exist for three different needs: tickets **created** in the window
-(weekly creations), tickets **closed** in the window but created before it (otherwise the
-"closed this week" list would miss them), and **every still-open ticket** whatever its
-age (the open-tickets stock is a current snapshot, not a windowed count).
+The branches load creations and closures in the range, plus tickets created earlier
+that may still be open at a historical cut-off. The final `created < Wn` prevents future
+issues entering an anchored Complete range. Closing-status transitions are queried as
+well as resolution dates because JIRA may close a ticket without setting a resolution.
 
 The exact JQL actually sent is displayed at the bottom of the dashboard, so you can
 paste it into JIRA and check the population yourself.
@@ -226,9 +227,10 @@ For each ticket returned by §4.1, `computeIssueDates()` derives:
   statuses. If there is none, the creation date is used instead and the ticket is
   flagged `*` in the list (cycle time then equals lead time).
 - **Creation date** = JIRA `created`.
-- **Clamping**: creation date and start date earlier than the configured **Start date**
-  are pulled forward to it. Time elapsed before the start date is never counted, so
-  a long-standing ticket does not produce an absurd lead time.
+- **Clamping**: in Complete, creation/start dates earlier than the configured start
+  date are pulled forward to it. In Last weeks, the clamp is the earlier of a valid
+  configured start and the first loaded week, so a future/recent start date cannot
+  create negative durations for weeks that Last weeks deliberately includes.
 
 The ticket is then attached to the week containing its **end date**
 (`weekIndexOf(doneDate)`); tickets ending outside the window are ignored.
@@ -241,8 +243,8 @@ The ticket is then attached to the week containing its **end date**
 throughput[w] = count( tickets | end date ∈ [week w start, week w end[ )
 ```
 
-Settings involved: project key, "Done" statuses, issue types, additional JQL, start date
-(window). Trend: current week vs previous week, higher is better.
+Settings involved: project key, "Done" statuses, issue types, additional JQL and loaded
+period. Trend: selected week vs previous loaded week, higher is better.
 
 ### 5.2 Committed throughput
 
@@ -349,7 +351,12 @@ For every ticket returned by §4.4:
   3. *now*, as a last resort, flagged with `~` in the "Closed on" column.
 - **Open** = not resolved **and** not in a closing status.
 - **Unplanned** = open **and** in one of the run "Backlog" statuses.
-- **Age counters** (hours): `now − created` and `now − updated`.
+- For each loaded week, the cut-off is its exclusive end for a past week, or `now` for
+  the true current week. Status, backlog membership, assignee and priority are rewound
+  from the changelog at that cut-off. If a complete value cannot be reconstructed, it
+  is marked unavailable and never replaced silently with today's value.
+- **Age since created** uses the cut-off. JIRA's current `updated` field cannot be
+  rewound reliably, so **since last activity** is unavailable for historical cut-offs.
 
 Priority ordering uses the site's own priority list (`GET /rest/api/3/priority`, highest
 first); unknown or missing priorities sort last.
@@ -364,18 +371,14 @@ Two distinct things share the name:
 opened[w] = count( tickets | creation date ∈ week w )
 ```
 
-**KPI card** — the **current stock**:
+**KPI card** — stock at the selected week's cut-off:
 
 ```
-openNow = count( tickets currently open )        = board list + unplanned list
+openNow = count( tickets open at cut-off ) = board list + unplanned list
 ```
 
-compared to the stock still open at the end of the previous week:
-
-```
-openAtPrevWeekEnd = count( tickets | created < previous week end
-                                     and (not closed or closed ≥ previous week end) )
-```
+It is compared with the reconstructed stock at the previous loaded week's cut-off.
+Tickets created before `W0` remain eligible, so historical stock is not understated.
 
 Trend: fewer is better.
 
@@ -391,8 +394,9 @@ closed[w]       = count( tickets | closing date ∈ week w )
 closedThisWeek  = closed[reference week]
 ```
 
-Comparison base — the previous week truncated to the **same elapsed duration**, so a
-partial week is never compared to a full one:
+For a past selected week, complete weeks are compared. For the true current week, the
+previous week is truncated to the **same elapsed duration**, so a partial week is never
+compared to a full one:
 
 ```
 elapsed  = min(reference week end, now) − reference week start
@@ -413,8 +417,8 @@ createdThisWeek       = count( creation date ∈ [reference week start, referenc
 createdPrevSameElapsed= count( creation date ∈ [previous week start, prevCut[ )
 ```
 
-Same "equal elapsed duration" principle as §6.2. Trend: **fewer is better** (more
-creations = more incoming load).
+The equal-elapsed-duration principle applies only to the true current week; historical
+weeks compare complete weeks. Trend: **fewer is better** (more creations = more load).
 
 ### 6.4 Creations per day
 
@@ -445,13 +449,15 @@ better. The card carries a coloured dot with the list thresholds (≤ 1 day, ≤
 
 ### 6.6 Unassigned tickets
 
-Current snapshot, no weekly bucketing: open tickets with no assignee, sorted by
-ascending creation date.
+Snapshot at the selected cut-off: open tickets with no reconstructed assignee, sorted
+by ascending creation date. A genuinely unassigned value is distinct from an assignee
+history that is unavailable.
 
 ### 6.7 Highest-priority tickets
 
-Current snapshot: tickets whose priority is one of the team's configured "highest"
-values, sorted by priority descending then creation ascending. For each of them:
+Snapshot at the selected cut-off: tickets whose reconstructed priority is one of the
+team's configured "highest" values, sorted by priority descending then creation
+ascending. For each of them:
 
 ```
 hoursToFirstComment = first comment date − creation date     (one API call per ticket)
@@ -486,9 +492,9 @@ exactly 0 ⇒ direction only, no percentage. Which side is "good":
 | Open tickets (run), created tickets (run), average resolution time | no |
 | Closed tickets (run) | yes |
 
-Three run indicators (closed, created, average resolution time) compare against the
-previous week **truncated to the same elapsed duration**; the others compare full weekly
-values.
+For the true current week, three Run indicators (closed, created, average resolution
+time) compare against the previous week truncated to the same elapsed duration. A
+historical reference compares complete weeks.
 
 ### 7.2 Colour thresholds
 
@@ -521,13 +527,13 @@ indicators, is in the README section
 | Lead time | build | §4.1 | end date | "Done" statuses, start date (clamp), aggregation |
 | Cycle time | build | §4.1 | end date | "In progress" + "Done" statuses, start date (clamp), aggregation |
 | Open tickets (series) | run | §4.4 | creation date | run labels |
-| Open tickets (card & lists) | run | §4.4 | current snapshot | closing statuses, run "Backlog" statuses |
+| Open tickets (card & lists) | run | §4.4 | stock at selected cut-off | closing statuses, run "Backlog" statuses |
 | Closed tickets | run | §4.4 | closing date | closing statuses |
 | Created tickets | run | §4.4 | creation date | run labels |
 | Creations per day | run | §4.4 | creation date | run labels |
 | Average resolution time | run | §4.4 | closing date | closing statuses |
-| Unassigned | run | §4.4 | current snapshot | run labels |
-| Highest priority | run | §4.4 + comments | current snapshot | "highest" priorities |
+| Unassigned | run | §4.4 | stock at selected cut-off | run labels |
+| Highest priority | run | §4.4 + comments | stock at selected cut-off | "highest" priorities |
 
-All rows additionally depend on: project key, issue types counted, additional JQL, start
-date (window), and "stable" threshold (trend wording).
+All rows additionally depend on: project key, issue types counted, additional JQL,
+selected period/reference week, and "stable" threshold (trend wording).

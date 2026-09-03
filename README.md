@@ -23,19 +23,21 @@ open an issue if something looks wrong.
 - **Update notification**: the extension compares its version with the latest
   GitHub release, shows a dot on the toolbar icon and on the ⚙ Settings button,
   and offers an assisted update in the settings page.
-- **Start date** configurable (build and run): the analysis window is the week
-  containing that date **plus the 4 weeks that follow** (5 weeks in total), stopping
-  at the **current week** when it falls inside that period.
-  - Window reaching today → the last week displayed is the current (incomplete) week.
-  - Window entirely in the past → the 5 weeks are displayed, none is flagged
-    "current", and the **last week of the window** is the reference week for the
-    key figures and the trends (a banner says so explicitly).
-  - Future date → error message, no display.
-  - Date = current week → no comparison (no previous week).
-  - Empty date → the last 5 weeks up to today.
-- **Delivered throughput** for the current week (Monday → Sunday) plus previous weeks
-  (bars). The **current (incomplete) week** is shown in **yellow** to clearly
-  distinguish it from completed weeks.
+- **Independent Build and Run periods**, chosen on the dashboard and loaded only after
+  **Apply**:
+  - **Last weeks** (default) always loads the current week and the four previous weeks,
+    independently of the configured start date.
+  - **Complete** loads the first weeks from the week containing the start date, capped
+    at **52 weeks**. If the cap excludes newer weeks, the exact loaded range and the
+    truncation are announced. With no start date, it falls back to Last weeks.
+  - Each mode remembers its own choice. After loading, the last week is selected.
+  - A **Reference week** selector updates KPI cards, trends and ticket lists locally,
+    with no new JIRA request. Its trend compares it to the immediately preceding loaded
+    week; the first loaded week has no comparison.
+  - Complete charts are horizontally scrollable and keyboard-focusable.
+- **Delivered throughput** for every loaded week (Monday → Sunday). The true
+  **current (incomplete) week**, when loaded, is shown in yellow; the selected
+  historical week has a separate outlined encoding.
 - **Committed throughput**: number of tickets present in a **board status during the
   "committed" counting window** (default Monday 00:00→12:00, **configurable**) — this
   is a snapshot on that window, not a count of transitions. It is shown **on the same
@@ -48,10 +50,9 @@ open an issue if something looks wrong.
   color (yellow is reserved for alerts): current-week status is conveyed by the
   "current" badge and the card border.
   The warm encoding is applied **only to a week that really is the current week**.
-  When the window is entirely in the past, **no** week is painted with it: the
-  reference week (last week of the window) keeps the completed-week colors, its
-  badges show the week date instead of "current", the current-week chart legends
-  disappear, and every label states the week date rather than "current week".
+  A selected historical reference keeps completed-week colors and receives a distinct
+  outline/label; its cards name the selected date rather than claiming it is current.
+  If the current week is outside a truncated Complete range, no warm mark is shown.
 - **Accessibility**: every text/background pair in both pages meets the **WCAG AA**
   contrast ratio (4.5:1 normal text, 3:1 large text and non-text indicators), checked
   against the rendered pages in a real browser. No information is ever carried by
@@ -61,14 +62,14 @@ open an issue if something looks wrong.
   are announced; form controls have programmatic labels; and reduced-motion settings
   are respected.
 - **Story points (per-team option)**: if the *"Track story points"* option is enabled
-  for a build team, the dashboard adds a **card** "Delivered story points" (current
-  week), a **weekly chart** below the throughput, and a **"Story points" column** in
-  the completed tickets list (before lead / cycle time). The corresponding JIRA field
-  is auto-detected, or can be forced in settings.
+  for a build team, the dashboard adds a **card** "Delivered story points" for the
+  selected reference week, a **weekly chart** below the throughput, and a **"Story
+  points" column** in the completed tickets list (before lead / cycle time). The
+  corresponding JIRA field is auto-detected, or can be forced in settings.
 - **Chart layout (build)**: the throughput chart spans the full width; lead time and
   cycle time sit side by side below it.
-- **List of tickets completed this week**: the *Cycle (d)* column has a **colored dot +
-  tooltip** — green ≤ 2 days, amber 2–4 days, red > 4 days.
+- **List of tickets completed in the selected reference week**: the *Cycle (d)* column
+  has a **colored dot + tooltip** — green ≤ 2 days, amber 2–4 days, red > 4 days.
 - **Weekly flow signals**: number of tickets **added to board** (entering a board
   status **from any other status**) and tickets **moved back to backlog**, counted
   during the **"additions / removals" counting window** (default Monday 12:00 → end of
@@ -81,8 +82,9 @@ open an issue if something looks wrong.
 - **Configurable counting windows** (global setting): day and hours of the "committed"
   window and the "additions / removals" window. Labels shown in the dashboard follow
   the chosen values automatically.
-- **Trends = current week compared to previous week** (top-of-page cards, both build
-  and run).
+- **Trends = selected reference week compared to its previous loaded week**
+  (top-of-page cards, both build and run). For the true current week, Run comparisons
+  retain the same-elapsed-time basis.
 - **Export / import of settings** as JSON (API token excluded by default) so you don't
   have to re-enter everything after a reinstall — see "Updating the extension".
 - **Export the dashboard as an image** (PNG or JPG): `🖼 Export image` button in the top
@@ -97,8 +99,8 @@ open an issue if something looks wrong.
   red = degradation, blue = stable.
 - **Per-team configurable statuses**: you define precisely which JIRA statuses mark the
   *start of work* (cycle time) and the *end* (throughput / lead / cycle).
-- Collapsible list of tickets completed **in the current week** + the JQL used
-  (calculation transparency).
+- Collapsible list of tickets completed **in the selected reference week** + the JQL
+  used (calculation transparency).
 - 100% local: credentials and token stored in the browser, no third-party server, no
   telemetry — see [Security and data handling](#security-and-data-handling).
 
@@ -130,27 +132,27 @@ For each ticket completed in the analyzed window:
   counted.
 - Weekly aggregation is the **median** by default (more robust to outliers),
   configurable to average.
-- **Trend** = comparison of the current week to the previous week; below the
-  "stable" threshold (10% by default), the trend is considered stable.
+- **Trend** = comparison of the selected reference week to its immediately preceding
+  loaded week; below the "stable" threshold (10% by default), it is considered stable.
 
 ## Run mode (support / run Kanban)
 
 For a project configured in **Run mode**, the analysis is not delivery flow but the
 management of a support ticket flow. Relevant tickets are identified by one or more
 **labels** (configurable per team). Weeks run **Monday 00:00 to Sunday 23:59**; in
-charts the current week uses warm tones. As in build mode, the top-of-page **cards**
-show their figure in normal text color, with the "current" badge and card border
-marking the current week. Metrics:
+charts the true current week uses warm tones. As in build mode, the top-of-page
+**cards** show their figure in normal text color. Their badge and border identify the
+selected reference week without presenting a historical selection as current. Metrics:
 
 | Metric | Calculation |
 |------------|--------|
-| **Open tickets** | Number of tickets whose **creation date** falls in the week under consideration (regardless of status) + two **lists**: "**open tickets on the board**" (non-backlog status) and "**unplanned open tickets (backlog)**" (status listed in the *run "Backlog" statuses*). Both lists share the same structure: JIRA link, priority, assignee, **age since created** and **since last activity** — flagged with a **colored dot** (green 0–1 d, amber 1–2 d, red > 2 d) with a tooltip. A **resolved** ticket or one in a configured **closing status** appears in neither list. The **KPI card** counts all open tickets (board + backlog). |
-| **Closed tickets** *(mirrors the open-tickets stat)* | Number of tickets whose **closing date** (date of entry into the closing status read from the changelog, or resolution date) falls in the week under consideration + a **list** of tickets **closed during the current week** (JIRA link, creation date, closing date, and **created → closed** duration with the same color code). Shown **on the same chart** as open tickets (grouped bars). The top-of-page card counts closures **for the current week**, compared to the previous week's closures **over the same elapsed duration** (e.g. Tuesday 14:00 → from Monday 00:00 to Tuesday 14:00 of the previous week). |
-| **Tickets created per day** | Chart of creations **per day of the week**: current week compared to the previous week. Working days (Mon→Fri) are always shown; **Saturday and Sunday appear only if they have at least one creation** (current or previous week). |
-| **Created tickets** | Number of tickets **created during the current week**, compared to the previous week's creations over the **same elapsed duration** (e.g. Tuesday 14:00 → from Monday 00:00 to Tuesday 14:00 of the previous week). The note also shows the full previous week's total. |
-| **Average resolution time** | Average of the `created → closed` delay for tickets **closed during the current week**. Colored dot using the same thresholds as the lists (green ≤ 1 d, amber ≤ 2 d, red > 2 d); trend compared to the previous week's average over the **same elapsed duration** (shorter = better). |
-| **Unassigned** | **List** (current snapshot) of open tickets **with no assignee**, with a link to their JIRA page. |
-| **Highest priority** | **List** (snapshot) of tickets whose priority is among the configured "highest" values, sorted by **priority descending then creation ascending**, with **creation date**, **created → first comment delay**, and **created → resolved delay**. Both delays use the same color code as the age counters (green dot ≤ 1 d, amber ≤ 2 d, red > 2 d). |
+| **Open tickets** | The weekly chart counts tickets by **creation week**. The KPI and two lists are a stock reconstructed at the selected week's cut-off: "**open tickets on the board**" (non-backlog status) and "**unplanned open tickets (backlog)**". The cut-off is the end of a past week or now for the current week. Tickets created before the loaded range are included when still open at that cut-off. |
+| **Closed tickets** *(mirrors the open-tickets stat)* | Number and list of tickets whose **closing date** falls in the selected week (entry into a closing status, or resolution date). For a past week the full week is used; for the current week, only elapsed time is used and the comparison uses the same elapsed duration in the previous week. |
+| **Tickets created per day** | Chart of creations per day in the selected week compared with its previous loaded week. Working days (Mon→Fri) are always shown; weekend days appear only when non-zero. |
+| **Created tickets** | Number created in the selected week. For the current week, the comparison uses the same elapsed duration; past weeks compare complete weeks. |
+| **Average resolution time** | Average `created → closed` delay for closures in the selected week. For the current week, the comparison uses the same elapsed duration; shorter is better. |
+| **Unassigned** | List of open tickets with no assignee at the selected cut-off. |
+| **Highest priority** | Snapshot at the selected cut-off, sorted by priority then creation date, with first-comment and resolution delays. |
 
 - "Highest" priorities are configurable per team (e.g. `Highest, Blocker`).
 - **Closing statuses** (e.g. `Done, Closed, Resolved`) are configurable per team: a
@@ -159,11 +161,15 @@ marking the current week. Metrics:
   status); failing that, the resolution date; as a last resort, "now", flagged with a
   `~` in the "Closed on" column. This is what makes it possible to correctly date a
   ticket closed without a resolution (e.g. `Cancelled`).
-- The **run "Backlog" statuses** are also configurable: they distinguish **unplanned**
-  open tickets from those **taken on the board**.
-- Trends compare the **current week** to the **previous week** (top-of-page cards, both
-  build and run). The run's "Open tickets" card compares the **current stock** to the
-  stock still open **at the end of the previous week**.
+- The **run "Backlog" statuses** distinguish unplanned open tickets from those taken
+  on the board. Historical status, backlog membership, assignee and priority are
+  reconstructed from complete changelogs. If JIRA cannot supply a complete history,
+  the dashboard says **unavailable** rather than silently substituting today's value;
+  affected tickets are excluded from reconstructed historical stocks.
+- Trends compare the **selected reference week** to the **previous loaded week**. For
+  the current incomplete week, created/closed/resolution comparisons use the same
+  elapsed duration in the previous week. The Run "Open tickets" card compares stocks
+  reconstructed at each week's cut-off.
 - **No carry-over between weeks**: each weekly metric only counts items whose reference
   event (creation, closing, transition, ticket end) falls within the
   `[Monday 00:00, next Monday 00:00[` bounds of the relevant week.
@@ -195,8 +201,8 @@ Three metrics are **deliberately not** exclusive, because they measure a **stock
 - **Committed throughput** — a snapshot of the board at the Monday window. A ticket
   that stays on the board for three weeks is counted in all three weeks: that's the
   question being asked ("how many tickets were committed this Monday?").
-- **Open tickets (top card, run)** — current stock of unresolved tickets, compared to
-  the stock still open at the end of the previous week.
+- **Open tickets (top card, run)** — stock of unresolved tickets at the selected
+  cut-off, compared with the reconstructed stock at the previous loaded cut-off.
 - **Additions to board / moves back to backlog** — these count *transitions*. A ticket
   that goes back and forth in the same week is counted on both sides: that's the churn
   signal being sought.
@@ -395,7 +401,7 @@ When reporting a bug, never paste your token.
    - API token: the one obtained in the **"Getting a JIRA Cloud API token"** section
      above (<https://id.atlassian.com/manage-profile/security/api-tokens>)
    - Click **Test connection**.
-3. **Metric settings**: start date (first week of the 5-week window), aggregation (median/average), stability
+3. **Metric settings**: start date (first week of the Complete period), aggregation (median/average), stability
    threshold, **JIRA story points field** (optional, empty = auto-detect), and **Build
    mode counting windows** ("committed" window and "additions / removals" window: day +
    hours).

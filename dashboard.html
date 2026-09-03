@@ -51,6 +51,16 @@
         <p id="comparisonNote" class="comparison-note hidden"></p>
 
         <div id="buildView">
+        <fieldset class="period-control" aria-describedby="buildPeriodHint buildPeriodWarning">
+          <legend>Analysis period</legend>
+          <label><input type="radio" name="buildPeriod" value="recent" /> Last weeks</label>
+          <label><input type="radio" name="buildPeriod" value="complete" /> Complete</label>
+          <button type="button" id="buildPeriodApply" class="btn">Apply</button>
+          <label for="buildWeekSelect">Reference week</label>
+          <select id="buildWeekSelect"></select>
+          <span id="buildPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Complete = up to the first 52 weeks from the start date.</span>
+        </fieldset>
+        <p id="buildPeriodWarning" class="comparison-note hidden" role="status" aria-live="polite"></p>
         <p class="legend">
           <span class="legend-item"><span class="swatch swatch-complete"></span> Completed weeks (blue / purple)</span>
           <span class="legend-item legend-current"><span class="swatch swatch-current"></span> Current week — incomplete (yellow / amber in charts)</span>
@@ -191,6 +201,16 @@
         </div><!-- /#buildView -->
 
         <div id="runView" class="hidden">
+          <fieldset class="period-control" aria-describedby="runPeriodHint runPeriodWarning">
+            <legend>Analysis period</legend>
+            <label><input type="radio" name="runPeriod" value="recent" /> Last weeks</label>
+            <label><input type="radio" name="runPeriod" value="complete" /> Complete</label>
+            <button type="button" id="runPeriodApply" class="btn">Apply</button>
+            <label for="runWeekSelect">Reference week</label>
+            <select id="runWeekSelect"></select>
+            <span id="runPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Complete = up to the first 52 weeks from the start date.</span>
+          </fieldset>
+          <p id="runPeriodWarning" class="comparison-note hidden" role="status" aria-live="polite"></p>
           <p class="cards-caption">Kanban <strong>run</strong> — tickets identified by their labels. Weeks from Monday 00:00 to Sunday 23:59. Key figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> — the trend compares it to the previous week.</p>
           <div class="cards">
             <div class="card card-current">
@@ -340,7 +360,7 @@
 
           <div class="panel">
             <details class="list-details">
-              <summary>Tickets closed this week <small>(<span id="runCloseListCount">0</span>)</small> — sorted by descending priority then most recently closed to oldest</summary>
+              <summary>Tickets closed in <span class="week-context-short">the current week</span> <small>(<span id="runCloseListCount">0</span>)</small> — sorted by descending priority then most recently closed to oldest</summary>
               <div class="table-wrap">
                 <table id="runClosedTable">
                   <thead>

@@ -6,6 +6,46 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.30.0
+
+### Selectable analysis periods and reference weeks
+
+- Added independent **Last weeks / Complete** period controls for Build and Run.
+  Changes are intentionally deferred until **Apply** is pressed and each mode remembers
+  its own preference.
+- **Last weeks** always loads the current week plus the four previous weeks. **Complete**
+  starts on the configured start-date week and loads at most the first 52 weeks; the
+  dashboard announces the exact range, missing start dates and any truncation.
+- Added an accessible **Reference week** selector. KPI cards, trends, flow signals and
+  ticket lists update locally from the loaded result without a new JIRA request. The
+  last loaded week is selected after Apply, and the first week has no comparison.
+- Complete charts use an intrinsic minimum width and keyboard-focusable horizontal
+  scrolling. The selected week and the true current week have separate visual and text
+  encodings, so a historical selection is never described as current.
+
+### Historical Run snapshots
+
+- Run analysis now precomputes one snapshot per loaded week. Past snapshots use the
+  week's end as their cut-off; the current week uses now.
+- Open/backlog stock includes tickets created before the loaded range when they were
+  still open at the cut-off. Created and closed flows and average resolution time stay
+  attached to their event week.
+- Status/backlog membership, assignee and priority are reconstructed from changelogs.
+  Incomplete history is explicitly shown as unavailable rather than silently replaced
+  with the current JIRA value; current `updated` timestamps are likewise not presented
+  as historical activity.
+- Highest-priority first-comment dates are fetched once for the union of relevant
+  tickets and reused by every local snapshot.
+- Current-week Run trends retain same-elapsed-duration comparisons; selected past weeks
+  compare complete weeks.
+
+### Query and documentation updates
+
+- Run JQL now retrieves pre-window open stock and closing-status transitions while
+  retaining an exclusive upper creation bound for anchored Complete ranges.
+- Settings hints, README and the metrics reference now document period selection,
+  truncation, historical cut-offs and reconstruction limits.
+
 ## 1.29.0
 
 ### Privacy-preserving image export
