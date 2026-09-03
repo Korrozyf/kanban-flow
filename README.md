@@ -52,6 +52,12 @@ open an issue if something looks wrong.
   reference week (last week of the window) keeps the completed-week colors, its
   badges show the week date instead of "current", the current-week chart legends
   disappear, and every label states the week date rather than "current week".
+- **Accessibility**: every text/background pair in both pages meets the **WCAG AA**
+  contrast ratio (4.5:1 normal text, 3:1 large text and non-text indicators), checked
+  against the rendered pages in a real browser. No information is ever carried by
+  color alone — thresholds combine a colored dot with a tooltip and a legend, links
+  are underlined, and the update indicator has a screen-reader label. Keyboard focus
+  is always visible.
 - **Story points (per-team option)**: if the *"Track story points"* option is enabled
   for a build team, the dashboard adds a **card** "Delivered story points" (current
   week), a **weekly chart** below the throughput, and a **"Story points" column** in

@@ -6,6 +6,39 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.28.1
+
+### Text contrast raised to WCAG AA
+An accessibility audit of the rendered pages found several text/background pairs
+below the AA threshold (4.5:1 for normal text, 3:1 for large text). No calculation
+rule, screen layout or setting changed — only colors.
+
+- **Links in the settings page.** The two links of the *Updates* section had **no
+  color rule at all**, so they fell back to the browser default `#0000EE` on a dark
+  panel: **1.7:1**, effectively unreadable. A base `a` rule now applies to every
+  link in both pages (`--link: #93c5fd`, **8.0:1** on the darkest background).
+  Inline links are also **underlined**: color alone must never carry the
+  information that something is a link (WCAG 1.4.1).
+- **Secondary text** (`--muted`) lightened from `#8b98a9` to `#9aa9bb`. The old
+  value failed on tinted backgrounds (badge on its own tint: 4.29:1) and for the
+  card sub-headings rendered at 80% opacity (4.43:1). Now ≥ 4.9:1 everywhere.
+- **Settings hints** (`small.hint`) used a hard-coded `#64748b`: **3.05:1**. They
+  now use `--muted`.
+- **Primary button**: light text on `#3b82f6` was **3.11:1**. The button surface is
+  now `--accent-strong: #2563eb` with white text (**5.2:1**), hover `#1d4ed8`.
+  `--accent` is kept for borders and fills, which only require 3:1.
+- **Red as text** (`.trend.bad`, "remove team" button, connection error) moved to a
+  new `--bad-text: #f87171` (**4.7:1** on the trend tint, against 3.7:1 before).
+  `--bad` is unchanged for dots and borders, where 3:1 applies.
+- **Visible focus** (WCAG 2.4.7): text fields no longer drop the native outline
+  without a replacement — they get a blue focus ring, and buttons, links and
+  selects get a `:focus-visible` outline in both pages.
+
+Verified with a contrast audit run in a real Chromium against the rendered pages
+(settings, dashboard build, dashboard run, and the "window entirely in the past"
+styling): every visible text node walks its ancestor chain to resolve the effective
+background, including alpha layers and inherited opacity. 11 checks, 0 failures.
+
 ## 1.28.0
 
 ### Update notification and assisted update

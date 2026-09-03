@@ -4,12 +4,19 @@
   --panel-2: #212a35;
   --border: #2b3644;
   --text: #e6edf3;
-  --muted: #8b98a9;
+  /* Secondary text: lightened so that the smallest labels (axes, notes, badges
+     on a tinted background) stay above the WCAG AA 4.5:1 ratio. */
+  --muted: #9aa9bb;
   --accent: #3b82f6;
   --accent-2: #60a5fa;
+  /* Blue used as TEXT on a dark surface (ticket links). */
+  --link: #93c5fd;
   --engage: #a78bfa; /* committed throughput (completed weeks): purple */
   --good: #22c55e;
   --bad: #ef4444;
+  /* Red as TEXT: #ef4444 only reaches 3.7:1 on the trend badge tint. Dots and
+     borders keep --bad (non-text, 3:1 threshold), labels use --bad-text. */
+  --bad-text: #f87171;
   --neutral: #94a3b8;
   --current: #facc15; /* current week — delivered: yellow */
   --current-2: #f59e0b; /* current week — committed: amber */
@@ -60,6 +67,11 @@ select, .btn, input, textarea {
 select { min-width: 220px; cursor: pointer; }
 .btn { cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 .btn:hover { background: #2a3543; border-color: var(--accent); }
+/* Visible focus (WCAG 2.4.7), contrasting with every background in the page. */
+.btn:focus-visible, a:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
 .btn-ghost { background: transparent; }
 
 main { padding: 24px; max-width: 1200px; margin: 0 auto; }
@@ -112,7 +124,7 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
   color: var(--neutral);
 }
 .trend.good { background: rgba(34, 197, 94, 0.16); color: var(--good); }
-.trend.bad { background: rgba(239, 68, 68, 0.16); color: var(--bad); }
+.trend.bad { background: rgba(239, 68, 68, 0.16); color: var(--bad-text); }
 .trend.stable { background: rgba(96, 165, 250, 0.16); color: var(--accent-2); }
 
 /* All charts occupy the SAME size: equal columns, panels stretched to the
@@ -233,7 +245,10 @@ body.no-current-week tr.row-current td:first-child { border-left: 0; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
 th { color: var(--muted); font-weight: 600; }
-td a { color: var(--accent-2); text-decoration: none; }
+/* Any link outside a table: the browser default (#0000EE) is unreadable on a
+   dark background (1.7:1). */
+a { color: var(--link); }
+td a { color: var(--link); text-decoration: none; }
 td a:hover { text-decoration: underline; }
 
 details summary { cursor: pointer; font-weight: 600; }
