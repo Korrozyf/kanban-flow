@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Kanban Flow — Kanban facilitator dashboard (JIRA)",
   "description": "Multi-team dashboard for Kanban facilitators: throughput, lead time, cycle time and weekly trends (Mon-Sun), straight from JIRA Cloud.",
-  "version": "1.27.0",
+  "version": "1.28.0",
   "permissions": [
     "storage"
   ],
@@ -10,11 +10,13 @@
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
   "host_permissions": [
-    "https://*.atlassian.net/*"
+    "https://*.atlassian.net/*",
+    "https://api.github.com/*"
   ],
   "background": {
     "service_worker": "background.js",
     "scripts": [
+      "lib/update.js",
       "background.js"
     ]
   },

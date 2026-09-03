@@ -331,3 +331,17 @@ td.age-bad { font-weight: 600; }
 /* During capture, the export button is disabled: prevents a double click. */
 .btn[disabled] { opacity: 0.5; cursor: default; }
 .btn[disabled]:hover { background: var(--panel); border-color: var(--border); }
+
+/* Update available: amber dot on the Settings button. The dot never carries the
+   information on its own — the button title and a screen-reader-only label say
+   it in words. */
+.update-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--current);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.25);
+  vertical-align: 2px;
+}

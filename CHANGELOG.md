@@ -6,6 +6,48 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.28.0
+
+### Update notification and assisted update
+The extension is installed manually, so the browser never updates it. It now tells
+you when a newer release exists instead of letting you run an old version silently.
+
+- **Version check** against the latest GitHub release
+  (`GET https://api.github.com/repos/Korrozyf/kanban-flow/releases/latest`). Runs at
+  browser startup, at install/update, and when the dashboard or the settings page is
+  opened. The result is cached for 6 hours because the anonymous GitHub API is rate
+  limited to 60 requests per hour and per IP.
+- **Dot on the extension icon** (amber badge) plus the new version in the icon
+  tooltip.
+- **Dot on the ⚙ Settings button** of the dashboard, with the version in its tooltip
+  and a screen-reader-only "Update available" label: the information is never carried
+  by colour alone.
+- **New settings section "5. Updates"**: installed version, ↻ *Check for updates*
+  (forces a fresh check), and **⬇ Update now**. Neither Chrome nor Firefox allows an
+  extension to install a package by itself, so *Update now* downloads the asset
+  matching the browser (`.zip` on Chrome/Edge, `.xpi` on Firefox) and reveals the
+  remaining manual steps, including a button that opens `chrome://extensions` /
+  `about:debugging`.
+- **Failure handling**: on a network error or a GitHub rate limit, the last known
+  version is kept, the error is displayed in the settings page, and no update is ever
+  claimed.
+
+### Security
+- The GitHub call carries **no credentials** (`credentials: "omit"`, no
+  `Authorization` header, no query string) and nothing about the user or their JIRA
+  site is sent.
+- Release payloads are treated as untrusted input: the tag must match a plain dotted
+  version, and a download URL is kept only when served by `https://github.com`
+  (rejects `http://`, other domains, and look-alikes such as `github.com.evil.com`).
+- New host permission `https://api.github.com/*` — the only addition, and it is
+  limited to the public releases endpoint.
+
+### Files
+- New `lib/update.js` (checker + cache), `background.js` extended with the badge and
+  a `jkd-update-check` message handler.
+- README: new "Update notification" section, security section and permission list
+  updated. `docs/INSTALLATION.md`: new update section.
+
 ## 1.27.0
 
 ### Security review (hardening)

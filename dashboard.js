@@ -709,6 +709,34 @@
     });
     $("exportBtn").addEventListener("click", exportImage);
     $("optionsBtn").addEventListener("click", () => api.runtime.openOptionsPage());
+
+    checkUpdate();
+  }
+
+  /* ---------- update indicator ---------- */
+
+  // Asks the background worker (single network path); falls back to an in-page
+  // check when messaging is unavailable. Never blocks the dashboard.
+  async function checkUpdate() {
+    if (typeof JKDUpdate === "undefined") return;
+    let state = null;
+    try {
+      const res = await api.runtime.sendMessage({ type: "jkd-update-check" });
+      if (res && res.ok) state = res.state;
+    } catch (e) {
+      /* no listener (e.g. page opened outside the extension context) */
+    }
+    if (!state) {
+      try {
+        state = await JKDUpdate.checkForUpdate({});
+      } catch (e) {
+        return;
+      }
+    }
+    if (!state || !state.updateAvailable) return;
+    $("updateDot").classList.remove("hidden");
+    $("updateDotLabel").classList.remove("hidden");
+    $("optionsBtn").title = `Settings — update available: ${state.latest} (installed ${state.current})`;
   }
 
   document.addEventListener("DOMContentLoaded", init);

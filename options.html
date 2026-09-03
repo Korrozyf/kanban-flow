@@ -153,6 +153,44 @@
         </div>
       </section>
 
+      <section class="card">
+        <h2>5. Updates <span id="updateDotSection" class="update-dot hidden" aria-hidden="true"></span></h2>
+        <p class="muted">
+          Kanban Flow is installed manually, so the browser cannot update it on its own.
+          This page checks the
+          <a id="releasesLink" href="https://github.com/Korrozyf/kanban-flow/releases/latest"
+             target="_blank" rel="noopener">GitHub releases</a>
+          and walks you through the update.
+        </p>
+        <div class="row">
+          <span class="muted">Installed version:</span>
+          <strong id="currentVersion">–</strong>
+          <button id="checkUpdateBtn" class="btn">↻ Check for updates</button>
+          <span id="updateResult" class="test-result"></span>
+        </div>
+        <div id="updatePanel" class="update-panel hidden">
+          <div class="row">
+            <button id="updateNowBtn" class="btn btn-primary">⬇ Update now</button>
+            <span class="muted">Downloads the package matching your browser.</span>
+          </div>
+          <ol id="updateSteps" class="update-steps hidden">
+            <li><strong>Export your settings first</strong> (section 4) — a quick safety net.</li>
+            <li>The package has been downloaded to your usual download folder.
+              <span id="stepUnzip">Unzip it over your existing Kanban Flow folder, replacing the old files.</span></li>
+            <li>Open <code id="extensionsUrl">chrome://extensions</code>
+              (<button id="openExtensionsBtn" class="btn btn-ghost">open it</button>)
+              then click <strong id="reloadLabel">Reload ↻</strong> on Kanban Flow.</li>
+            <li>Reopen the dashboard and check the version above. Your settings and
+              API token are kept by the browser profile.</li>
+          </ol>
+          <p class="muted">
+            Full procedure:
+            <a id="installDocLink" href="https://github.com/Korrozyf/kanban-flow/blob/main/docs/INSTALLATION.md"
+               target="_blank" rel="noopener">installation guide</a>.
+          </p>
+        </div>
+      </section>
+
       <div class="save-bar">
         <button id="saveBtn" class="btn btn-primary">💾 Save</button>
         <span id="saveResult" class="test-result"></span>
@@ -269,6 +307,7 @@
     </template>
 
     <script src="lib/store.js"></script>
+    <script src="lib/update.js"></script>
     <script src="lib/jira.js"></script>
     <script src="options.js"></script>
   </body>

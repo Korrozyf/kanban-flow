@@ -94,6 +94,28 @@ reinstall or a machine change.
 
 ## 6. Update
 
+### The extension tells you when a new version exists
+
+Kanban Flow checks the latest release published on GitHub (at browser startup and
+when you open one of its pages; the answer is cached for 6 hours). When a newer
+version is available you get an **amber dot**:
+
+- on the extension icon in the toolbar — hover it to read the version;
+- on the **⚙ Settings** button of the dashboard;
+- next to **5. Updates** in the settings page.
+
+That check only reads a public GitHub page. It sends no account, no token, no
+information about your JIRA site.
+
+### Assisted update (the easy path)
+
+Settings → **5. Updates** → **⬇ Update now**. The right package for your browser is
+downloaded and the steps to finish are displayed. The browser does not allow an
+extension to install a package by itself, so the last two steps stay manual:
+replace the files, then reload the extension.
+
+↻ **Check for updates** forces an immediate check instead of using the cache.
+
 ### If you installed a signed `.xpi` in Firefox
 
 Nothing to do: Firefox checks for new versions and updates automatically.

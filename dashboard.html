@@ -28,7 +28,9 @@
         </select>
         <button id="exportBtn" class="btn" disabled
                 title="Save the full metrics page as an image">🖼 Export image</button>
-        <button id="optionsBtn" class="btn btn-ghost" title="Settings">⚙ Settings</button>
+        <button id="optionsBtn" class="btn btn-ghost" title="Settings">⚙ Settings<span
+            id="updateDot" class="update-dot hidden" aria-hidden="true"></span><span
+            id="updateDotLabel" class="sr-label hidden">Update available</span></button>
       </div>
     </header>
 
@@ -362,6 +364,7 @@
     </footer>
 
     <script src="lib/store.js"></script>
+    <script src="lib/update.js"></script>
     <script src="lib/jira.js"></script>
     <script src="lib/metrics.js"></script>
     <script src="lib/charts.js"></script>

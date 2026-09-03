@@ -309,6 +309,100 @@
     }
   }
 
+  /* ---------- updates ---------- */
+
+  const api = typeof browser !== "undefined" ? browser : chrome;
+  let updateState = null;
+
+  function updateMsg(text, cls) {
+    const el = $("updateResult");
+    el.textContent = text;
+    el.className = "test-result " + (cls || "");
+  }
+
+  function renderUpdateState(state) {
+    updateState = state || null;
+    if (!state) return;
+    $("currentVersion").textContent = state.current;
+    if (state.htmlUrl) $("releasesLink").href = state.htmlUrl;
+    if (state.installDocUrl) $("installDocLink").href = state.installDocUrl;
+
+    const firefox = JKDUpdate.isFirefox();
+    $("extensionsUrl").textContent = firefox ? "about:debugging#/runtime/this-firefox" : "chrome://extensions";
+    $("reloadLabel").textContent = firefox ? "Reload" : "Reload \u21bb";
+    $("stepUnzip").textContent = firefox
+      ? "Keep the .xpi file where you can find it."
+      : "Unzip it over your existing Kanban Flow folder, replacing the old files.";
+
+    $("updateDotSection").classList.toggle("hidden", !state.updateAvailable);
+    $("updatePanel").classList.toggle("hidden", !state.updateAvailable);
+
+    if (state.updateAvailable) {
+      updateMsg(`● Version ${state.latest} is available (installed ${state.current}).`, "");
+    } else if (state.error) {
+      updateMsg(`✗ ${state.error}`, "err");
+    } else if (state.latest) {
+      updateMsg(`✓ Up to date (latest release: ${state.latest}).`, "ok");
+    } else {
+      updateMsg("", "");
+    }
+  }
+
+  // Single network path: ask the background worker so the toolbar badge is
+  // refreshed at the same time. Falls back to an in-page check.
+  async function requestUpdateState(force) {
+    let state = null;
+    try {
+      const res = await api.runtime.sendMessage({ type: "jkd-update-check", force: !!force });
+      if (res && res.ok) state = res.state;
+    } catch (e) {
+      /* no background listener */
+    }
+    if (!state) state = await JKDUpdate.checkForUpdate({ force: !!force });
+    return state;
+  }
+
+  async function checkUpdate(force) {
+    if (typeof JKDUpdate === "undefined") return;
+    $("currentVersion").textContent = JKDUpdate.currentVersion();
+    if (force) updateMsg("Checking\u2026", "");
+    try {
+      renderUpdateState(await requestUpdateState(force));
+    } catch (e) {
+      updateMsg(`✗ ${(e && e.message) || "Version check failed."}`, "err");
+    }
+  }
+
+  // The browser forbids an extension from installing a package by itself, so
+  // "Update now" downloads the right asset and reveals the manual steps.
+  function startAssistedUpdate() {
+    const state = updateState;
+    if (!state) return;
+    const url = state.downloadUrl || state.htmlUrl || state.releasesUrl;
+    $("updateSteps").classList.remove("hidden");
+    try {
+      window.open(url, "_blank", "noopener");
+    } catch (e) {
+      updateMsg(`✗ Could not open ${url}`, "err");
+      return;
+    }
+    updateMsg(
+      state.downloadUrl
+        ? `Downloading ${state.latest}\u2026 then follow the steps below.`
+        : "Release page opened \u2014 download the package, then follow the steps below.",
+      "ok"
+    );
+  }
+
+  async function openExtensionsPage() {
+    const url = $("extensionsUrl").textContent;
+    try {
+      await api.tabs.create({ url });
+    } catch (e) {
+      updateMsg(`✗ Copy this address into a new tab: ${url}`, "err");
+    }
+  }
+
   async function init() {
     const cfg = await JKDStore.loadConfig();
     applyConfig(cfg);
@@ -324,6 +418,11 @@
         ev.target.value = ""; // allows re-importing the same file
       });
     });
+    $("checkUpdateBtn").addEventListener("click", () => checkUpdate(true));
+    $("updateNowBtn").addEventListener("click", startAssistedUpdate);
+    $("openExtensionsBtn").addEventListener("click", openExtensionsPage);
+
+    checkUpdate(false);
   }
 
   document.addEventListener("DOMContentLoaded", init);

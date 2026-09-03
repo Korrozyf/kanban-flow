@@ -138,3 +138,32 @@ small.hint {
   color: #64748b;
   font-size: 12px;
 }
+
+/* Update section: amber dot next to the heading, plus the assisted steps. */
+.update-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: #facc15;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.25);
+  vertical-align: 3px;
+}
+.update-panel {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  border-radius: 8px;
+  background: rgba(250, 204, 21, 0.06);
+}
+.update-steps {
+  margin: 12px 0 4px;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+.update-steps code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}

@@ -20,6 +20,9 @@ open an issue if something looks wrong.
   resolution time, unassigned / highest-priority lists). See the "Run mode" section
   below.
 - **Team / project selection** via a dropdown menu (multi-team).
+- **Update notification**: the extension compares its version with the latest
+  GitHub release, shows a dot on the toolbar icon and on the ⚙ Settings button,
+  and offers an assisted update in the settings page.
 - **Start date** configurable (build and run): the analysis window is the week
   containing that date **plus the 4 weeks that follow** (5 weeks in total), stopping
   at the **current week** when it falls inside that period.
@@ -226,6 +229,40 @@ The version is read from `manifest.json`. Pushing a `vX.Y.Z` tag triggers the Gi
 Actions workflow that builds the packages and creates the release with notes from
 `CHANGELOG.md` (see [docs/PUBLICATION.md](docs/PUBLICATION.md)).
 
+## Update notification
+
+The extension is installed manually, so the browser cannot update it on its own.
+To avoid silently running an old version, Kanban Flow checks the latest release
+published on GitHub:
+
+- **When**: at browser startup, at install/update, and when the dashboard or the
+  settings page is opened. The answer is cached for **6 hours** (the anonymous
+  GitHub API allows 60 requests per hour and per IP), and ↻ *Check for updates*
+  forces a fresh check.
+- **Where**: `GET https://api.github.com/repos/Korrozyf/kanban-flow/releases/latest`,
+  a public endpoint called with `credentials: "omit"` and **no** authentication
+  header. Nothing about you or your JIRA site is sent.
+- **What you see** when a newer version exists: an amber dot on the extension
+  icon (with the version in the icon tooltip), an amber dot on the ⚙ Settings
+  button of the dashboard (with the version in its tooltip), and section
+  **5. Updates** of the settings page.
+- **If GitHub is unreachable**: the last known answer is kept, the error is shown
+  in the settings page, and no update is ever claimed on a failed check.
+
+### Assisted update
+
+Neither Chrome nor Firefox lets an extension install a package by itself, so
+**⬇ Update now** does the parts that can be automated and spells out the rest:
+
+1. it downloads the asset matching your browser (`.zip` on Chrome/Edge, `.xpi`
+   on Firefox) from the release;
+2. it reveals the four manual steps (export your settings, unzip over the
+   existing folder, reload the extension, check the version);
+3. **open it** opens `chrome://extensions` (or `about:debugging` on Firefox).
+
+For a fully silent auto-update, the extension has to be distributed through the
+stores — see [docs/PUBLICATION.md](docs/PUBLICATION.md).
+
 ## Updating the extension without re-entering anything
 
 Settings (JIRA connection, teams, statuses) are stored **in the browser** via
@@ -306,7 +343,17 @@ no error reporting, no third-party script, no remote font: the charts are homegr
 and `html2canvas` is vendored locally (byte-identical to the upstream 1.4.1 release).
 The image export is produced in-page and saved through a `Blob` + `download` link.
 
-**Permissions.** `storage` and `https://*.atlassian.net/*`. Nothing else — no `tabs`,
+**The one other host contacted.** `https://api.github.com/` — only to read the
+latest published release (public endpoint, `credentials: "omit"`, no
+authentication header, no query string). Release payloads are treated as
+untrusted: the tag must be a plain dotted version, and a download URL is only
+kept when it is served by `https://github.com`. Nothing is uploaded and no
+identifier is sent, but GitHub does see your IP address when the check runs; if
+that matters to you, the check is a single function in `lib/update.js` and can be
+removed by deleting `https://api.github.com/*` from `manifest.json`.
+
+**Permissions.** `storage`, `https://*.atlassian.net/*` and
+`https://api.github.com/*`. Nothing else — no `tabs`,
 no `<all_urls>`, no `downloads`, no content script injected into your pages. The
 extension only runs on its own two pages, and requests use `credentials: "omit"` so
 your JIRA session cookies are never involved.
@@ -381,14 +428,15 @@ When reporting a bug, never paste your token.
   each SVG without the stylesheet), then restores the original state; collapsed
   `<details>` are opened for the duration of the capture. The download uses a `Blob` +
   a `download` link: **no additional permission** is required.
-- Requested permissions: `storage` only + host `https://*.atlassian.net/*`.
+- Requested permissions: `storage` + hosts `https://*.atlassian.net/*` and
+  `https://api.github.com/*` (update check only).
 
 ## Structure
 
 ```
 jira-kanban-dashboard/
 ├── manifest.json
-├── background.js          # opens/refocuses the dashboard tab
+├── background.js          # opens/refocuses the dashboard tab + update badge
 ├── dashboard.html/.css/.js
 ├── options.html/.css/.js  # settings (connection, preferences, teams)
 ├── lib/
@@ -397,6 +445,7 @@ jira-kanban-dashboard/
 │   ├── metrics.js         # build engine (throughput/lead/cycle/signals/story points)
 │   │                     # + run engine (open/closed/created/resolution), Mon→Sun weeks
 │   ├── charts.js          # SVG charts
+│   ├── update.js          # latest GitHub release check (cached, no credentials)
 │   ├── export-image.js    # captures the page as PNG/JPG (inlines SVG styles)
 │   └── html2canvas.min.js # html2canvas 1.4.1 (MIT), vendored — local rasterization
 ├── icons/
