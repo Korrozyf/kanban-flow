@@ -6,6 +6,48 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.29.0
+
+### Privacy-preserving image export
+
+- Ticket tables are now **collapsed by default** in PNG/JPG exports. Previously,
+  `lib/export-image.js` silently opened every `<details>` element, so an image could
+  disclose ticket keys, summaries, assignees, statuses and dates that were not visible
+  when the user clicked Export.
+- New explicit **Include ticket lists** checkbox in the dashboard toolbar. Selecting it
+  preserves the former full-detail export; leaving it clear exports metrics, charts and
+  list headings/counts only. The DOM state is restored after capture in both cases.
+- README and installation guidance now describe the exact contents and privacy trade-off
+  instead of claiming that an export contained only what was on screen.
+
+### Accessibility and interface quality
+
+- SVG charts now expose a programmatic title and a complete text alternative containing
+  every series, period and value (`role="img"` + `aria-labelledby`).
+- Dashboard and settings results use polite live regions; dashboard errors switch to an
+  alert so asynchronous failures are announced immediately.
+- Every cloned team field now has a unique `label` / control association and help text is
+  connected with `aria-describedby`; remove buttons have an explicit accessible name.
+- Ticket links remain visibly underlined, responsive layouts no longer overflow narrow
+  screens, and both pages honour `prefers-reduced-motion`.
+- Dashboard error text now uses the accessible red text token (`#f87171`): the previous
+  `#ef4444` reached only 4.35:1 on the panel, just below WCAG AA.
+- Corrected the trend tooltip, which still described the obsolete "last two complete
+  weeks" rule, and changed the last French duration suffix (`j`) to English (`d`).
+
+### Security, reliability and maintainability
+
+- The update checker now caches failed checks for the same 6-hour period as successful
+  checks. Opening several extension pages during a GitHub outage no longer repeats the
+  request or needlessly consumes the anonymous rate limit; the manual check still
+  bypasses the cache.
+- Release download links now require the exact `github.com` host rather than accepting
+  arbitrary subdomains.
+- Every third-party GitHub Action in the release workflow is pinned to an immutable
+  commit SHA, and the job has a 10-minute timeout.
+- Full review found no critical or high-severity issue and no JIRA credential leak. No
+  metric formula, JQL query, permission or settings format changed.
+
 ## 1.28.1
 
 ### Text contrast raised to WCAG AA

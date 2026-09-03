@@ -26,6 +26,9 @@
           <option value="png">PNG</option>
           <option value="jpeg">JPG</option>
         </select>
+        <label class="export-option" title="Include the ticket tables in the exported image">
+          <input id="exportDetails" type="checkbox" /> Include ticket lists
+        </label>
         <button id="exportBtn" class="btn" disabled
                 title="Save the full metrics page as an image">🖼 Export image</button>
         <button id="optionsBtn" class="btn btn-ghost" title="Settings">⚙ Settings<span
@@ -35,7 +38,7 @@
     </header>
 
     <main id="main">
-      <section id="statusPanel" class="panel status">
+      <section id="statusPanel" class="panel status" role="status" aria-live="polite" aria-atomic="true">
         <p id="statusMessage">Select a team to display its flow metrics.</p>
       </section>
 

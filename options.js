@@ -2,6 +2,7 @@
 (function () {
   "use strict";
   const $ = (id) => document.getElementById(id);
+  let projectRowSeq = 0;
 
   function parseList(str) {
     return String(str || "")
@@ -29,7 +30,36 @@
       extraJql: "",
     };
     node.dataset.id = p.id;
-    node.querySelector(".p-name").value = p.name || "";
+
+    // Template controls need unique label associations once cloned. Link each
+    // field's direct label, control and help text without relying on position or
+    // placeholder text (WCAG 1.3.1 / 3.3.2).
+    const rowPrefix = `project-${++projectRowSeq}`;
+    node.querySelectorAll(".field").forEach((field, fieldIndex) => {
+      const children = Array.from(field.children);
+      const label = children.find(
+        (el) => el.tagName === "LABEL" && !el.classList.contains("inline")
+      );
+      const control = children.find(
+        (el) => el.matches && el.matches("input:not([type=checkbox]), select, textarea")
+      );
+      if (!label || !control) return;
+      control.id = `${rowPrefix}-field-${fieldIndex}`;
+      label.htmlFor = control.id;
+      const help = children.find((el) => el.tagName === "SMALL");
+      if (help) {
+        help.id = `${control.id}-help`;
+        control.setAttribute("aria-describedby", help.id);
+      }
+    });
+    const nameInput = node.querySelector(".p-name");
+    nameInput.id = `${rowPrefix}-name`;
+    node.querySelector(".p-remove").setAttribute(
+      "aria-label",
+      `Remove team ${p.name || p.key || "entry"}`
+    );
+
+    nameInput.value = p.name || "";
     node.querySelector(".p-key").value = p.key || "";
     node.querySelector(".p-jql").value = p.extraJql || "";
     node.querySelector(".p-wip").value = (p.inProgressStatuses || []).join(", ");

@@ -35,7 +35,7 @@
         </div>
         <div class="row">
           <button id="testBtn" class="btn">Test connection</button>
-          <span id="testResult" class="test-result"></span>
+          <span id="testResult" class="test-result" role="status" aria-live="polite" aria-atomic="true"></span>
         </div>
       </section>
 
@@ -138,7 +138,7 @@
           <button id="exportBtn" class="btn">⬇ Export settings</button>
           <button id="importBtn" class="btn">⬆ Import settings</button>
           <input id="importFile" type="file" accept="application/json,.json" hidden />
-          <span id="backupResult" class="test-result"></span>
+          <span id="backupResult" class="test-result" role="status" aria-live="polite" aria-atomic="true"></span>
         </div>
         <div class="field">
           <label class="inline">
@@ -166,7 +166,7 @@
           <span class="muted">Installed version:</span>
           <strong id="currentVersion">–</strong>
           <button id="checkUpdateBtn" class="btn">↻ Check for updates</button>
-          <span id="updateResult" class="test-result"></span>
+          <span id="updateResult" class="test-result" role="status" aria-live="polite" aria-atomic="true"></span>
         </div>
         <div id="updatePanel" class="update-panel hidden">
           <div class="row">
@@ -193,7 +193,7 @@
 
       <div class="save-bar">
         <button id="saveBtn" class="btn btn-primary">💾 Save</button>
-        <span id="saveResult" class="test-result"></span>
+        <span id="saveResult" class="test-result" role="status" aria-live="polite" aria-atomic="true"></span>
         <a id="openDashboard" href="dashboard.html" class="btn btn-ghost">Open dashboard →</a>
       </div>
     </div>
@@ -201,8 +201,8 @@
     <template id="projectTemplate">
       <div class="project" data-id="" data-mode="build">
         <div class="project-head">
-          <input class="p-name" type="text" placeholder="Team name (e.g. Team Alpha)" />
-          <button class="btn btn-danger p-remove" title="Remove">✕</button>
+          <input class="p-name" type="text" aria-label="Team name" placeholder="Team name (e.g. Team Alpha)" />
+          <button type="button" class="btn btn-danger p-remove" aria-label="Remove team">✕</button>
         </div>
         <div class="grid2">
           <div class="field">
@@ -227,7 +227,7 @@
           <label>Issue types counted</label>
           <div class="row">
             <button type="button" class="btn p-types-load">Load types from JIRA</button>
-            <span class="test-result p-types-msg"></span>
+            <span class="test-result p-types-msg" role="status" aria-live="polite" aria-atomic="true"></span>
           </div>
           <div class="types-box p-types-box hidden"></div>
           <input

@@ -76,6 +76,11 @@ see the [metrics reference](METRICS.md). What the extension does with your API t
 what leaves the browser and what does not, is described in
 [Security and data handling](../README.md#security-and-data-handling).
 
+When exporting the dashboard as PNG/JPG, ticket lists are **collapsed by default**.
+Tick *Include ticket lists* only when all recipients of the image are allowed to see
+its ticket keys, summaries, assignees, statuses and dates. The JIRA URL, e-mail and API
+token are never included in the image.
+
 ---
 
 ## 5. Back up / restore your settings
@@ -104,8 +109,9 @@ version is available you get an **amber dot**:
 - on the **⚙ Settings** button of the dashboard;
 - next to **5. Updates** in the settings page.
 
-That check only reads a public GitHub page. It sends no account, no token, no
-information about your JIRA site.
+That check only reads a public GitHub endpoint. It sends no account, no token and no
+information about your JIRA site; as with any web request, GitHub still sees your IP
+address.
 
 ### Assisted update (the easy path)
 

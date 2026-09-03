@@ -13,6 +13,8 @@
     const el = $("statusMessage");
     panel.classList.remove("hidden", "error", "loading");
     if (kind) panel.classList.add(kind);
+    panel.setAttribute("role", kind === "error" ? "alert" : "status");
+    panel.setAttribute("aria-live", kind === "error" ? "assertive" : "polite");
     el.textContent = msg;
     panel.classList.remove("hidden");
   }
@@ -52,8 +54,7 @@
     }
     el.textContent = `${arrow} ${label}${pctTxt}`;
     el.title =
-      "Trend calculated over the last 2 COMPLETE weeks " +
-      "(the current, incomplete week is excluded from the comparison). " +
+      "Trend compares the displayed reference period with the previous week. " +
       "Green = improvement, red = deterioration, blue = stable.";
   }
 
@@ -207,17 +208,20 @@
     const series = [];
     if (r.hasEngage) {
       series.push({
+        label: "Committed throughput",
         values: r.throughputEngage,
         className: "bar-engage",
         currentClassName: "bar-engage-current",
       });
     }
     series.push({
+      label: "Delivered throughput",
       values: r.throughput,
       className: "bar-done",
       currentClassName: "bar-done-current",
     });
     JKDCharts.groupedBarChart($("throughputChart"), {
+      title: "Committed and delivered throughput per week",
       labels,
       series,
       currentIndex: chartCurrentIndex(r),
@@ -225,9 +229,11 @@
     renderSignals(r);
     if (spOn) {
       JKDCharts.groupedBarChart($("spChart"), {
+        title: "Delivered story points per week",
         labels,
         series: [
           {
+            label: "Delivered story points",
             values: r.storyPointsWeekly,
             className: "bar-done",
             currentClassName: "bar-done-current",
@@ -237,11 +243,17 @@
       });
     }
     JKDCharts.lineChart($("leadChart"), {
+      title: "Lead time per week",
+      seriesLabel: "Lead time",
+      unit: "days",
       labels,
       values: r.leadWeekly,
       currentIndex: chartCurrentIndex(r),
     });
     JKDCharts.lineChart($("cycleChart"), {
+      title: "Cycle time per week",
+      seriesLabel: "Cycle time",
+      unit: "days",
       labels,
       values: r.cycleWeekly,
       currentIndex: chartCurrentIndex(r),
@@ -284,7 +296,7 @@
   function fmtDuration(hours) {
     if (hours == null || isNaN(hours)) return "–";
     if (hours < 24) return `${hours.toFixed(1)} h`;
-    return `${(hours / 24).toFixed(1)} j`;
+    return `${(hours / 24).toFixed(1)} d`;
   }
   // Thresholds common to all durations displayed (lists + cards):
   // green ≤ 1 d, amber 1–2 d, red > 2 d.
@@ -375,10 +387,11 @@
     const labels = r.weeks.map((w) => w.label);
     // Opened (created) and closed on the same chart, week by week.
     JKDCharts.groupedBarChart($("runFlowChart"), {
+      title: "Tickets opened and closed per week",
       labels,
       series: [
-        { values: r.openCount, className: "bar-open", currentClassName: "bar-open-current" },
-        { values: r.closeCount, className: "bar-closed", currentClassName: "bar-closed-current" },
+        { label: "Opened", values: r.openCount, className: "bar-open", currentClassName: "bar-open-current" },
+        { label: "Closed", values: r.closeCount, className: "bar-closed", currentClassName: "bar-closed-current" },
       ],
       currentIndex: chartCurrentIndex(r),
     });
@@ -396,13 +409,15 @@
     const pickDays = (arr) => dayIdx.map((d) => arr[d] || 0);
     const daySeries = [];
     if (r.createdPerDayPrev) {
-      daySeries.push({ values: pickDays(r.createdPerDayPrev), className: "bar-open" });
+      daySeries.push({ label: "Previous week", values: pickDays(r.createdPerDayPrev), className: "bar-open" });
     }
     daySeries.push({
+      label: r.hasCurrentWeek ? "Current week" : `Week of ${curLabel}`,
       values: pickDays(r.createdPerDayCurrent),
       className: r.hasCurrentWeek ? "bar-done-current" : "bar-done",
     });
     JKDCharts.groupedBarChart($("runDailyChart"), {
+      title: "Tickets created per day",
       labels: dayIdx.map((d) => dayNames[d]),
       series: daySeries,
       currentIndex: -1,
@@ -596,13 +611,17 @@
     header.classList.remove("hidden");
 
     try {
+      const includeDetails = $("exportDetails").checked;
       const res = await JKDExport.exportNode($("dashboard"), {
         format,
         name: lastRender.project.name,
+        openDetails: includeDetails,
       });
       const ko = Math.round(res.bytes / 1024);
       setStatus(
-        `Image saved: ${res.fileName} (${res.width}×${res.height} px, ${ko} KB).`
+        `Image saved: ${res.fileName} (${res.width}×${res.height} px, ${ko} KB` +
+          (includeDetails ? ", ticket lists included" : ", ticket lists collapsed") +
+          ")."
       );
       setTimeout(hideStatus, 6000);
     } catch (e) {

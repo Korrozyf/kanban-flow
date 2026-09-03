@@ -35,6 +35,10 @@ The `.github/workflows/release.yml` workflow then takes over:
 4. it creates the **GitHub release** with the notes extracted from the matching section of
    `CHANGELOG.md` and both packages attached.
 
+For supply-chain safety, every third-party GitHub Action is pinned to an immutable
+commit SHA (with its release number kept in a comment). Review and update both when
+upgrading an action; do not replace the SHA with a moving `@vN` tag.
+
 Follow the run in the repository's **Actions** tab.
 
 ---

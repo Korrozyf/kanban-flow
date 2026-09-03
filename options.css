@@ -73,7 +73,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; margin-top: 12px; }
 
-.row { display: flex; align-items: center; gap: 12px; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 .btn {
   font: inherit;
@@ -138,7 +138,20 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
 .types-box input { width: auto; margin: 0; }
 
 @media (max-width: 680px) {
+  .wrap { padding: 18px 14px 80px; }
   .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
+  .section-head { align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .project-head { align-items: stretch; }
+  .save-bar { flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 /* Conditional display of fields depending on Build / Run mode */

@@ -57,7 +57,9 @@ open an issue if something looks wrong.
   against the rendered pages in a real browser. No information is ever carried by
   color alone — thresholds combine a colored dot with a tooltip and a legend, links
   are underlined, and the update indicator has a screen-reader label. Keyboard focus
-  is always visible.
+  is always visible; charts have names and full text alternatives; dynamic results
+  are announced; form controls have programmatic labels; and reduced-motion settings
+  are respected.
 - **Story points (per-team option)**: if the *"Track story points"* option is enabled
   for a build team, the dashboard adds a **card** "Delivered story points" (current
   week), a **weekly chart** below the throughput, and a **"Story points" column** in
@@ -85,8 +87,10 @@ open an issue if something looks wrong.
   have to re-enter everything after a reinstall — see "Updating the extension".
 - **Export the dashboard as an image** (PNG or JPG): `🖼 Export image` button in the top
   bar. The capture covers the **entire metrics page** (not just the visible area),
-  with ticket lists **expanded**, and a header showing team / mode / period /
-  generation date. ×2 resolution (readable in a meeting or report). The file is saved
+  with a header showing team / mode / period / generation date. Ticket lists stay
+  **collapsed by default** to avoid disclosing ticket-level data; explicitly tick
+  *Include ticket lists* when that content belongs in the image. ×2 resolution
+  (readable in a meeting or report). The file is saved
   to the browser's download folder as `kanban-flow_<team>_<date>_<time>.png|jpg`.
 - **Lead time** per week and **cycle time** per week (lines, median or average).
 - **Trends** (up / stable / down) for each metric, color-coded: green = improvement,
@@ -370,9 +374,12 @@ the tables, as are ticket keys and links. Extension pages also run under an expl
 `script-src 'self'` policy, so no inline or remote script can execute.
 
 **Exports.** The settings export excludes the API token unless you tick the box. The
-image export contains only what is on screen (team name, mode, period, figures) —
-never the URL, the e-mail or the token. `.gitignore` blocks settings exports from being
-committed by accident.
+image export never contains the JIRA URL, e-mail or token. By default, ticket lists
+remain collapsed, so the image contains the metrics, charts and list headings/counts
+but not ticket-level rows. The separate *Include ticket lists* checkbox deliberately
+opens every list for the capture; use it only when all recipients may see those ticket
+keys, summaries, assignees, statuses and dates. `.gitignore` blocks settings exports
+from being committed by accident.
 
 **Recommended practice.** Use a token dedicated to this extension with an expiry date,
 so you can revoke it without affecting anything else; the token inherits your account's
@@ -431,9 +438,10 @@ When reporting a bug, never paste your token.
   rasterization is 100% local, no data leaves the browser. Before capture,
   `lib/export-image.js` copies the computed styles of `<svg>` elements into inline
   attributes (our bars get their color from CSS classes, but html2canvas serializes
-  each SVG without the stylesheet), then restores the original state; collapsed
-  `<details>` are opened for the duration of the capture. The download uses a `Blob` +
-  a `download` link: **no additional permission** is required.
+  each SVG without the stylesheet), then restores the original state. Collapsed
+  `<details>` are opened temporarily only when *Include ticket lists* is selected.
+  The download uses a `Blob` + a `download` link: **no additional permission** is
+  required.
 - Requested permissions: `storage` + hosts `https://*.atlassian.net/*` and
   `https://api.github.com/*` (update check only).
 
