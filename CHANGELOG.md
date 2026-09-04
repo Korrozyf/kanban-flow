@@ -6,6 +6,20 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.30.1
+
+### Browser-specific background manifests
+
+- Fixed the Chrome Manifest V3 warning: `background.scripts` is no longer present in
+  the repository manifest or the Chrome package. Chrome now receives only
+  `background.service_worker`.
+- The build now generates a Firefox-specific manifest for the `.xpi`, containing
+  `background.scripts` without Chrome's `background.service_worker`.
+- Added build-time validation that rejects incompatible background keys in either
+  package, preventing this cross-browser packaging regression from recurring.
+- The Chrome package also omits Firefox-only `browser_specific_settings`; the Firefox
+  package retains the Gecko add-on id and minimum version.
+
 ## 1.30.0
 
 ### Selectable analysis periods and reference weeks

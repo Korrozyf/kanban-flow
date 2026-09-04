@@ -226,10 +226,13 @@ Ready-to-install packages are published in the repository's
 5. Click the 📊 icon to open the dashboard.
 
 ### Firefox (121+)
-1. `about:debugging#/runtime/this-firefox`
-2. **Load Temporary Add-on…** → select the folder's `manifest.json` file (or the
-   `.xpi`).
-3. Click the 📊 icon.
+1. Download or build the Firefox `.xpi` package.
+2. `about:debugging#/runtime/this-firefox`
+3. **Load Temporary Add-on…** → select the `.xpi`.
+4. Click the 📊 icon.
+
+> The repository's root `manifest.json` is directly loadable by Chrome. The build
+> generates the Firefox-specific `background.scripts` manifest inside the `.xpi`.
 
 > Temporary loading = wiped on Firefox restart. For a permanent installation **with
 > automatic updates**, the extension must be signed by Mozilla (AMO, free) — procedure
@@ -241,7 +244,9 @@ Ready-to-install packages are published in the repository's
 ./tools/build.sh      # → dist/kanban-flow-<version>.zip and .xpi
 ```
 
-The version is read from `manifest.json`. Pushing a `vX.Y.Z` tag triggers the GitHub
+The version is read from `manifest.json`. This source manifest uses Chrome's MV3
+`background.service_worker`; the build generates a Firefox manifest using
+`background.scripts` inside the `.xpi`. Pushing a `vX.Y.Z` tag triggers the GitHub
 Actions workflow that builds the packages and creates the release with notes from
 `CHANGELOG.md` (see [docs/PUBLICATION.md](docs/PUBLICATION.md)).
 
@@ -429,8 +434,9 @@ When reporting a bug, never paste your token.
 
 ## Technical details
 
-- Manifest V3, compatible with Chrome and Firefox (`background.service_worker` /
-  `background.scripts`).
+- Manifest V3, with browser-specific packaged manifests: Chrome uses
+  `background.service_worker`; Firefox uses `background.scripts`. The two incompatible
+  background declarations are never shipped together.
 - JIRA API: modern endpoint `POST /rest/api/3/search/jql` (`nextPageToken` pagination),
   + `/rest/api/3/issue/{key}/changelog` as a fallback if the changelog is truncated,
   `GET /rest/api/3/priority` (site priority order), `GET /rest/api/3/field` (story
@@ -470,7 +476,7 @@ jira-kanban-dashboard/
 │   └── html2canvas.min.js # html2canvas 1.4.1 (MIT), vendored — local rasterization
 ├── icons/
 ├── tools/
-│   └── build.sh           # builds dist/*.zip (Chrome) and dist/*.xpi (Firefox)
+│   └── build.sh           # builds browser-specific Chrome ZIP and Firefox XPI manifests
 ├── docs/                  # shipped inside the packages (except updates.json)
 │   ├── INSTALLATION.md    # user guide: install, configure, update
 │   ├── METRICS.md         # queries + calculations behind every indicator

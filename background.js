@@ -2,8 +2,9 @@
  * Two roles:
  *  - open (or re-focus) the dashboard tab when the extension icon is clicked;
  *  - check GitHub for a newer release and show a dot on the extension icon.
- * Works on Chrome (service worker) and Firefox (event page via
- * background.scripts, where lib/update.js is loaded by the manifest).
+ * Works on Chrome (service worker) and Firefox (event page). The build creates
+ * a browser-specific manifest: Chrome uses background.service_worker, while
+ * Firefox uses background.scripts and loads lib/update.js before this file.
  */
 if (typeof JKDUpdate === "undefined" && typeof importScripts === "function") {
   importScripts("lib/update.js"); // Chrome MV3 service worker

@@ -49,10 +49,13 @@ Two cases, depending on how the version was published.
 **b) The `.xpi` is not signed** — temporary installation, valid until Firefox is closed:
 
 1. Open `about:debugging#/runtime/this-firefox`.
-2. **Load Temporary Add-on…** then select the `.xpi` (or the `manifest.json` inside the
-   unzipped folder).
+2. **Load Temporary Add-on…** then select the `.xpi`.
 3. After every Firefox restart you have to do it again **and re-import your settings**
    (see §5).
+
+> Always use the `.xpi` for Firefox. The repository's root `manifest.json` is the
+> directly loadable Chrome manifest; the build generates Firefox's
+> `background.scripts` manifest inside the `.xpi`.
 
 ---
 

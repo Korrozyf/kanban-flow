@@ -8,7 +8,10 @@ This document describes the repository's release cycle and the real options for
 ## 1. Publish a new version
 
 Versioning is semantic (`MAJOR.MINOR.PATCH`, see the header of `CHANGELOG.md`).
-`manifest.json` is the **single source of truth** for the version.
+`manifest.json` is the **single source of truth** for the version and is directly
+loadable in Chrome. `tools/build.sh` derives a Firefox-specific manifest for the `.xpi`:
+Chrome receives only `background.service_worker`, while Firefox receives only
+`background.scripts`.
 
 ```bash
 # 1. Make the changes, then bump the version
@@ -31,7 +34,8 @@ The `.github/workflows/release.yml` workflow then takes over:
 
 1. it **refuses** to publish if the tag does not match the manifest version;
 2. it syntax-checks every JS file;
-3. it builds `kanban-flow-<version>.zip` (Chrome) and `.xpi` (Firefox);
+3. it builds `kanban-flow-<version>.zip` with a Chrome manifest and `.xpi` with a
+   Firefox manifest, validating that incompatible background keys are never mixed;
 4. it creates the **GitHub release** with the notes extracted from the matching section of
    `CHANGELOG.md` and both packages attached.
 
