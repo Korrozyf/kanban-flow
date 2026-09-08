@@ -3,8 +3,10 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   let projectRowSeq = 0;
-  // Period choices are edited on the dashboard; settings must preserve them.
+  // Analysis-period controls live on the dashboard; Settings preserves their
+  // choices and shared start date when saving other configuration.
   let periodPrefs = { buildPeriodMode: "recent", runPeriodMode: "recent" };
+  let analysisStartDate = "";
 
   function parseList(str) {
     return String(str || "")
@@ -214,7 +216,7 @@
       baseUrl: JKDJira.normalizeBaseUrl($("baseUrl").value),
       email: $("email").value.trim(),
       token: $("token").value,
-      startDate: $("startDate").value || "",
+      startDate: analysisStartDate,
       buildPeriodMode: periodPrefs.buildPeriodMode,
       runPeriodMode: periodPrefs.runPeriodMode,
       aggregate: $("aggregate").value,
@@ -273,7 +275,7 @@
     $("baseUrl").value = cfg.baseUrl || "";
     $("email").value = cfg.email || "";
     $("token").value = cfg.token || "";
-    $("startDate").value = cfg.startDate || cfg.macrocycleStart || "";
+    analysisStartDate = cfg.startDate || cfg.macrocycleStart || "";
     $("aggregate").value = cfg.aggregate || "median";
     $("threshold").value = cfg.stableThresholdPct != null ? cfg.stableThresholdPct : 10;
     fillDaySelects();

@@ -6,6 +6,29 @@ Semantic versioning: `MAJOR.MINOR.PATCH`.
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
 
+## 1.31.0
+
+### Ticket labels in Build and Run lists
+
+- Added a **Labels** column immediately after **Summary** to every Build and Run ticket
+  list: completed, highest-priority, unassigned, board, backlog and closed tickets.
+- Labels are requested with the analysis data and rendered as escaped, wrapping chips;
+  tickets without labels display an em dash.
+
+## 1.30.2
+
+### Analysis period terminology and placement
+
+- Moved the shared **Start date** from Settings to the **Analysis period** controls in
+  both Build and Run. Editing it in either mode mirrors the value in the other; it is
+  saved when **Apply** is pressed.
+- Renamed the visible **Complete** period to **Since start date**. Its calculation and
+  52-week cap are unchanged; **Last weeks** remains unchanged.
+- Renamed the visible **Reference week** control to **Week's KPIs**. Its local KPI,
+  trend and ticket-list behaviour is unchanged.
+- Settings now preserves the shared start date while editing unrelated settings, without
+  displaying a duplicate field.
+
 ## 1.30.1
 
 ### Browser-specific background manifests

@@ -33,14 +33,16 @@ the dot belongs to the week that *starts*, never to the one that ends.
 
 - **Last weeks** (`recent`, default) always loads exactly five weeks: the current week
   and the four previous weeks. It does not use the configured start date.
-- **Complete** loads from the Monday of the configured start date through the current
-  week, but is capped at the **first 52 weeks** (`COMPLETE_WINDOW_WEEKS = 52`). The
-  range stays anchored at its start; if more history exists, recent weeks are excluded
-  and the dashboard announces the exact range and truncation.
-- Complete without a valid start date falls back to Last weeks and announces why.
+- **Since start date** (`complete` internally) loads from the Monday of the shared
+  start date through the current week, but is capped at the **first 52 weeks**
+  (`COMPLETE_WINDOW_WEEKS = 52`). Its Start date control is located in both Build and
+  Run Analysis period sections and is synchronised between them. The range stays
+  anchored at its start; if more history exists, recent weeks are excluded and the
+  dashboard announces the exact range and truncation.
+- Since start date without a valid start date falls back to Last weeks and announces why.
 - The current week is marked only if it is actually present in the loaded range.
 
-**Reference week.** After each load, the final loaded week is selected. The user may
+**Week's KPIs.** After each load, the final loaded week is selected. The user may
 then choose any loaded week without another JIRA request. `selectedIndex` drives KPI
 cards, trends and lists; `currentWeekIndex` separately identifies the true ongoing
 week. A selected historical week never receives the current-week wording or colours.
@@ -58,12 +60,12 @@ cause of counters stuck at zero.
 
 ## 2. Settings and what they drive
 
-### Global settings (section 2 of the settings page)
+### Settings and dashboard analysis controls
 
 | Setting | Key | Used by |
 | --- | --- | --- |
-| Start date | `startDate` | Anchors the Complete period (both modes). Also clamps lead/cycle time in Complete; Last weeks clamps no later than its first loaded week (see §5.5). |
-| Dashboard period | `buildPeriodMode`, `runPeriodMode` | Independent `recent` / `complete` choices, saved when **Apply** is pressed. |
+| Start date | `startDate` | Shared Build/Run value, edited in either dashboard Analysis period section (not in Settings). Anchors Since start date in both modes. Also clamps lead/cycle time in that mode; Last weeks clamps no later than its first loaded week (see §5.5). |
+| Dashboard period | `buildPeriodMode`, `runPeriodMode` | Independent `recent` / `complete` choices (shown as Last weeks / Since start date), saved when **Apply** is pressed. |
 | Lead/cycle time aggregation | `aggregate` | `median` (default) or `average` for the weekly lead and cycle time series. |
 | "Stable" threshold (%) | `stableThresholdPct` | A week-over-week variation whose absolute value is ≤ this threshold is reported as *stable* instead of up/down. Default 10. |
 | JIRA story points field | `storyPointsField` | Forces the custom field id. Empty ⇒ auto-detection by field name. |
@@ -113,10 +115,10 @@ your site's REST API v3.
 
 **Fields requested** in the search:
 
-- build: `created`, `resolutiondate`, `summary`, `status` (+ the story points custom
-  field when the option is on);
-- run: `created`, `updated`, `resolutiondate`, `resolution`, `summary`, `status`,
-  `assignee`, `priority`;
+- build: `created`, `resolutiondate`, `summary`, `labels`, `status` (+ the story
+  points custom field when the option is on);
+- run: `created`, `updated`, `resolutiondate`, `resolution`, `summary`, `labels`,
+  `status`, `assignee`, `priority`;
 - board snapshot and flow-signal queries: the default four fields — only the changelog
   matters there.
 

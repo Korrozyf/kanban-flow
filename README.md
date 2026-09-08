@@ -27,14 +27,16 @@ open an issue if something looks wrong.
   **Apply**:
   - **Last weeks** (default) always loads the current week and the four previous weeks,
     independently of the configured start date.
-  - **Complete** loads the first weeks from the week containing the start date, capped
-    at **52 weeks**. If the cap excludes newer weeks, the exact loaded range and the
-    truncation are announced. With no start date, it falls back to Last weeks.
+  - **Since start date** loads the first weeks from the week containing the shared
+    start date, capped at **52 weeks**. The date is set in each mode's Analysis period
+    section and stays synchronised between Build and Run. If the cap excludes newer
+    weeks, the exact loaded range and the truncation are announced. With no start date,
+    it falls back to Last weeks.
   - Each mode remembers its own choice. After loading, the last week is selected.
-  - A **Reference week** selector updates KPI cards, trends and ticket lists locally,
+  - A **Week's KPIs** selector updates KPI cards, trends and ticket lists locally,
     with no new JIRA request. Its trend compares it to the immediately preceding loaded
     week; the first loaded week has no comparison.
-  - Complete charts are horizontally scrollable and keyboard-focusable.
+  - Since start date charts are horizontally scrollable and keyboard-focusable.
 - **Delivered throughput** for every loaded week (Monday → Sunday). The true
   **current (incomplete) week**, when loaded, is shown in yellow; the selected
   historical week has a separate outlined encoding.
@@ -52,7 +54,7 @@ open an issue if something looks wrong.
   The warm encoding is applied **only to a week that really is the current week**.
   A selected historical reference keeps completed-week colors and receives a distinct
   outline/label; its cards name the selected date rather than claiming it is current.
-  If the current week is outside a truncated Complete range, no warm mark is shown.
+  If the current week is outside a truncated Since start date range, no warm mark is shown.
 - **Accessibility**: every text/background pair in both pages meets the **WCAG AA**
   contrast ratio (4.5:1 normal text, 3:1 large text and non-text indicators), checked
   against the rendered pages in a real browser. No information is ever carried by
@@ -68,6 +70,9 @@ open an issue if something looks wrong.
   corresponding JIRA field is auto-detected, or can be forced in settings.
 - **Chart layout (build)**: the throughput chart spans the full width; lead time and
   cycle time sit side by side below it.
+- **Ticket labels in every ticket list**: a **Labels** column immediately follows
+  **Summary** in Build and Run. Each JIRA label is displayed as a readable chip; an
+  em dash means the ticket has no label.
 - **List of tickets completed in the selected reference week**: the *Cycle (d)* column
   has a **colored dot + tooltip** — green ≤ 2 days, amber 2–4 days, red > 4 days.
 - **Weekly flow signals**: number of tickets **added to board** (entering a board
@@ -406,10 +411,9 @@ When reporting a bug, never paste your token.
    - API token: the one obtained in the **"Getting a JIRA Cloud API token"** section
      above (<https://id.atlassian.com/manage-profile/security/api-tokens>)
    - Click **Test connection**.
-3. **Metric settings**: start date (first week of the Complete period), aggregation (median/average), stability
-   threshold, **JIRA story points field** (optional, empty = auto-detect), and **Build
-   mode counting windows** ("committed" window and "additions / removals" window: day +
-   hours).
+3. **Metric settings**: aggregation (median/average), stability threshold, **JIRA story
+   points field** (optional, empty = auto-detect), and **Build mode counting windows**
+   ("committed" window and "additions / removals" window: day + hours).
 4. **Teams / Projects**: for each of your teams, enter the name, the JIRA project key,
    and the **exact statuses** of your workflow (comma-separated, case-insensitive):
    - **Kanban type**: **Build** or **Run**;
@@ -428,7 +432,10 @@ When reporting a bug, never paste your token.
      `Done, Closed`) to exclude closed tickets from the stats, and the **run "Backlog"
      statuses** (unplanned open tickets).
 5. **Save**, then go back to the dashboard and choose a team.
-6. **Settings backup**: export it to a JSON file (see "Updating the extension without
+6. In the relevant Build or Run **Analysis period** section, enter the shared **Start
+   date** if you use **Since start date**, choose the period, and click **Apply**. The
+   same date is mirrored in the other mode; **Last weeks** remains independent of it.
+7. **Settings backup**: export it to a JSON file (see "Updating the extension without
    re-entering anything") — do this as soon as settings are finalized, and before every
    update.
 

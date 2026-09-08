@@ -132,6 +132,7 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .period-control legend { padding: 0 6px; color: var(--muted); font-weight: 600; }
 .period-control label { display: inline-flex; align-items: center; gap: 6px; }
 .period-control input { width: auto; margin: 0; accent-color: var(--accent); }
+.period-control input[type="date"] { min-width: 152px; }
 .period-control select { min-width: 150px; }
 .period-hint { flex-basis: 100%; color: var(--muted); font-size: 12px; }
 
@@ -305,6 +306,21 @@ th { color: var(--muted); font-weight: 600; }
    dark background (1.7:1). */
 a { color: var(--link); text-decoration: underline; }
 td a { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+/* Ticket labels remain readable in dense tables and wrap instead of forcing a
+   fixed-width layout. Each chip is textual, so meaning never depends on colour. */
+.ticket-labels { min-width: 130px; max-width: 260px; }
+.ticket-label {
+  display: inline-block;
+  margin: 1px 4px 1px 0;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--panel-2);
+  font-size: 11px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
 
 details summary { cursor: pointer; font-weight: 600; }
 /* Collapsible ticket lists */

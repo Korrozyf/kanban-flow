@@ -78,9 +78,20 @@
       ? "complete" : "recent";
   }
 
+  // The analysis start date is shared by Build and Run, but exposed next to
+  // each mode's period control so it is available where it is used.
+  function syncStartDateInputs(value) {
+    const date = value || "";
+    ["buildStartDate", "runStartDate"].forEach((id) => {
+      const input = $(id);
+      if (input) input.value = date;
+    });
+  }
+
   function setupPeriodControls(mode, r) {
     const prefix = mode === "run" ? "run" : "build";
     const active = periodModeFor(mode);
+    syncStartDateInputs(cfg.startDate);
     document.querySelectorAll(`input[name="${prefix}Period"]`).forEach((radio) => {
       radio.checked = radio.value === active;
     });
@@ -99,11 +110,11 @@
     const info = $(`${mode === "run" ? "run" : "build"}PeriodWarning`);
     const notes = [];
     if (r.missingStartDate) {
-      notes.push("Complete needs a start date; the five latest weeks are shown instead.");
+      notes.push("Since start date needs a start date; the five latest weeks are shown instead.");
     }
     if (r.truncated && r.weeks.length) {
       notes.push(
-        `Complete is limited to the first 52 weeks (${r.weeks[0].label} → ` +
+        `Since start date is limited to the first 52 weeks (${r.weeks[0].label} → ` +
         `${r.weeks[r.weeks.length - 1].label}); more recent weeks are not loaded.`
       );
     }
@@ -312,6 +323,7 @@
       tr.innerHTML =
         `<td><a href="${escapeHtml(d.url)}" target="_blank" rel="noopener">${escapeHtml(d.key)}</a></td>` +
         `<td>${escapeHtml(d.summary || "")}</td>` +
+        labelsCell(d.labels) +
         `<td>${d.week}</td>` +
         `<td>${doneStr}</td>` +
         (spOn ? `<td>${fmtPoints(d.storyPoints)}</td>` : "") +
@@ -334,6 +346,15 @@
 
   function fmtDate(d) {
     return d ? d.toLocaleDateString("en-GB") : "–";
+  }
+  // Labels are rendered as individually escaped chips. An empty label set is
+  // explicit rather than leaving an ambiguous blank cell.
+  function labelsCell(labels) {
+    const values = Array.isArray(labels) ? labels.filter(Boolean) : [];
+    if (!values.length) return '<td class="ticket-labels">–</td>';
+    return '<td class="ticket-labels">' + values.map((label) =>
+      `<span class="ticket-label">${escapeHtml(label)}</span>`
+    ).join("") + '</td>';
   }
   function fmtDuration(hours) {
     if (hours == null || isNaN(hours)) return "–";
@@ -499,6 +520,7 @@
     const openRow = (t) =>
       `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
       `<td>${escapeHtml(t.summary)}</td>` +
+      labelsCell(t.labels) +
       `<td>${escapeHtml(t.statusAvailable === false ? "unavailable" : (t.status || ""))}</td>` +
       `<td>${escapeHtml(historicalValue(t.priority, t.priorityAvailable, "–"))}</td>` +
       `<td>${escapeHtml(historicalValue(t.assignee, t.assigneeAvailable, "— unassigned"))}</td>` +
@@ -535,6 +557,7 @@
       tr.innerHTML =
         `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
+        labelsCell(t.labels) +
         `<td>${escapeHtml(t.status || "")}</td>` +
         `<td>${escapeHtml(historicalValue(t.priority, t.priorityAvailable, "–"))}</td>` +
         `<td>${escapeHtml(historicalValue(t.assignee, t.assigneeAvailable, "— unassigned"))}</td>` +
@@ -553,6 +576,7 @@
       tr.innerHTML =
         `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
+        labelsCell(t.labels) +
         `<td>${escapeHtml(t.status || "")}</td>` +
         `<td>${escapeHtml(historicalValue(t.priority, t.priorityAvailable, "–"))}</td>` +
         `<td>${fmtDate(t.created)}</td>`;
@@ -568,6 +592,7 @@
       tr.innerHTML =
         `<td><a href="${escapeHtml(t.url)}" target="_blank" rel="noopener">${escapeHtml(t.key)}</a></td>` +
         `<td>${escapeHtml(t.summary)}</td>` +
+        labelsCell(t.labels) +
         `<td>${escapeHtml(historicalValue(t.priority, t.priorityAvailable, "–"))}</td>` +
         `<td>${fmtDate(t.created)}</td>` +
         ageCell(t.hoursToFirstComment) +
@@ -706,8 +731,11 @@
   async function applyPeriod(mode) {
     const prefix = mode === "run" ? "run" : "build";
     const selected = document.querySelector(`input[name="${prefix}Period"]:checked`);
+    const startInput = $(`${prefix}StartDate`);
     const key = mode === "run" ? "runPeriodMode" : "buildPeriodMode";
     cfg[key] = selected && selected.value === "complete" ? "complete" : "recent";
+    cfg.startDate = startInput ? startInput.value || "" : "";
+    syncStartDateInputs(cfg.startDate);
     await JKDStore.saveConfig(cfg);
     await runAnalysis();
   }
@@ -753,7 +781,7 @@
         setStatus(
           `The start date (week of ${d}) is in the future ` +
             "relative to the current week. No data to display: " +
-            "choose a date equal to or earlier than the current week in ⚙ Settings.",
+            "choose a date equal to or earlier than the current week in Analysis period.",
           "error"
         );
         return;
@@ -781,6 +809,7 @@
 
   async function init() {
     cfg = await JKDStore.loadConfig();
+    syncStartDateInputs(cfg.startDate);
     populateProjects();
 
     if (!cfg.baseUrl || !cfg.email || !cfg.token) {
@@ -801,6 +830,11 @@
         radio.checked = radio.value === periodModeFor(mode);
       });
       $(`${prefix}PeriodApply`).addEventListener("click", () => applyPeriod(mode));
+      $(`${prefix}StartDate`).addEventListener("input", (event) => {
+        // Keep the duplicate control in the other mode visually in sync. The
+        // value is saved only when Apply is pressed.
+        syncStartDateInputs(event.target.value);
+      });
       $(`${prefix}WeekSelect`).addEventListener("change", (event) => {
         if (loadedMode === mode) renderSelectedWeek(event.target.value);
       });

@@ -54,11 +54,13 @@
         <fieldset class="period-control" aria-describedby="buildPeriodHint buildPeriodWarning">
           <legend>Analysis period</legend>
           <label><input type="radio" name="buildPeriod" value="recent" /> Last weeks</label>
-          <label><input type="radio" name="buildPeriod" value="complete" /> Complete</label>
+          <label><input type="radio" name="buildPeriod" value="complete" /> Since start date</label>
+          <label for="buildStartDate">Start date</label>
+          <input id="buildStartDate" type="date" />
           <button type="button" id="buildPeriodApply" class="btn">Apply</button>
-          <label for="buildWeekSelect">Reference week</label>
+          <label for="buildWeekSelect">Week's KPIs</label>
           <select id="buildWeekSelect"></select>
-          <span id="buildPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Complete = up to the first 52 weeks from the start date.</span>
+          <span id="buildPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Since start date = up to the first 52 weeks from the shared start date.</span>
         </fieldset>
         <p id="buildPeriodWarning" class="comparison-note hidden" role="status" aria-live="polite"></p>
         <p class="legend">
@@ -180,6 +182,7 @@
                   <tr>
                     <th>Ticket</th>
                     <th>Summary</th>
+                    <th>Labels</th>
                     <th>Week</th>
                     <th>Completed on</th>
                     <th class="sp-col hidden">Story points</th>
@@ -204,11 +207,13 @@
           <fieldset class="period-control" aria-describedby="runPeriodHint runPeriodWarning">
             <legend>Analysis period</legend>
             <label><input type="radio" name="runPeriod" value="recent" /> Last weeks</label>
-            <label><input type="radio" name="runPeriod" value="complete" /> Complete</label>
+            <label><input type="radio" name="runPeriod" value="complete" /> Since start date</label>
+            <label for="runStartDate">Start date</label>
+            <input id="runStartDate" type="date" />
             <button type="button" id="runPeriodApply" class="btn">Apply</button>
-            <label for="runWeekSelect">Reference week</label>
+            <label for="runWeekSelect">Week's KPIs</label>
             <select id="runWeekSelect"></select>
-            <span id="runPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Complete = up to the first 52 weeks from the start date.</span>
+            <span id="runPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Since start date = up to the first 52 weeks from the shared start date.</span>
           </fieldset>
           <p id="runPeriodWarning" class="comparison-note hidden" role="status" aria-live="polite"></p>
           <p class="cards-caption">Kanban <strong>run</strong> — tickets identified by their labels. Weeks from Monday 00:00 to Sunday 23:59. Key figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> — the trend compares it to the previous week.</p>
@@ -291,7 +296,7 @@
                 <table id="runMaxPrioTable">
                   <thead>
                     <tr>
-                      <th>Ticket</th><th>Summary</th><th>Priority</th><th>Created on</th>
+                      <th>Ticket</th><th>Summary</th><th>Labels</th><th>Priority</th><th>Created on</th>
                       <th>Created → first comment</th><th>Created → resolved</th>
                     </tr>
                   </thead>
@@ -312,7 +317,7 @@
               <div class="table-wrap">
                 <table id="runUnassignedTable">
                   <thead>
-                    <tr><th>Ticket</th><th>Summary</th><th>Status</th><th>Priority</th><th>Created on</th></tr>
+                    <tr><th>Ticket</th><th>Summary</th><th>Labels</th><th>Status</th><th>Priority</th><th>Created on</th></tr>
                   </thead>
                   <tbody></tbody>
                 </table>
@@ -326,7 +331,7 @@
               <div class="table-wrap">
                 <table id="runOpenTable">
                   <thead>
-                    <tr><th>Ticket</th><th>Summary</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Age since created</th><th>Since last activity</th></tr>
+                    <tr><th>Ticket</th><th>Summary</th><th>Labels</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Age since created</th><th>Since last activity</th></tr>
                   </thead>
                   <tbody></tbody>
                 </table>
@@ -345,7 +350,7 @@
               <div class="table-wrap">
                 <table id="runBacklogTable">
                   <thead>
-                    <tr><th>Ticket</th><th>Summary</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Age since created</th><th>Since last activity</th></tr>
+                    <tr><th>Ticket</th><th>Summary</th><th>Labels</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Age since created</th><th>Since last activity</th></tr>
                   </thead>
                   <tbody></tbody>
                 </table>
@@ -364,7 +369,7 @@
               <div class="table-wrap">
                 <table id="runClosedTable">
                   <thead>
-                    <tr><th>Ticket</th><th>Summary</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Closed on</th><th>Created → closed</th></tr>
+                    <tr><th>Ticket</th><th>Summary</th><th>Labels</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Created on</th><th>Closed on</th><th>Created → closed</th></tr>
                   </thead>
                   <tbody></tbody>
                 </table>
