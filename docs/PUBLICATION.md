@@ -39,6 +39,12 @@ The `.github/workflows/release.yml` workflow then takes over:
 4. it creates the **GitHub release** with the notes extracted from the matching section of
    `CHANGELOG.md` and both packages attached.
 
+If several local versions have accumulated since the last public release, keep their
+individual entries in `CHANGELOG.md` and add a concise **Cumulative highlights since the
+last published release** subsection inside the new version's entry. The workflow publishes
+that whole version section as the release notes. Explicitly note any intentionally skipped
+experimental versions; do not invent release tags for builds that were never published.
+
 For supply-chain safety, every third-party GitHub Action is pinned to an immutable
 commit SHA (with its release number kept in a comment). Review and update both when
 upgrading an action; do not replace the SHA with a moving `@vN` tag.

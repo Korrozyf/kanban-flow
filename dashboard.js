@@ -58,7 +58,7 @@
     }
     el.textContent = `${arrow} ${label}${pctTxt}`;
     el.title =
-      "Trend compares the displayed reference period with the previous week. " +
+      "Trend compares the displayed reference week with the previous week. " +
       "Green = improvement, red = deterioration, blue = stable.";
   }
 
@@ -115,17 +115,23 @@
     if (r.truncated && r.weeks.length) {
       notes.push(
         `Since start date is limited to the first 52 weeks (${r.weeks[0].label} → ` +
-        `${r.weeks[r.weeks.length - 1].label}); more recent weeks are not loaded.`
+        `${r.weeks[r.weeks.length - 1].label}); later weeks are not loaded.`
       );
     }
     if (index === 0) notes.push("No previous loaded week is available for trend comparison.");
-    const snapshot = mode === "run" && r.snapshots ? r.snapshots[index] : null;
+    if (mode === "build" && r.committedHistoryIncompleteCount) {
+      notes.push(`${r.committedHistoryIncompleteCount} committed-throughput candidate(s) were excluded because JIRA history was incomplete.`);
+    }
+    if (mode === "build" && r.committedMissingCreationDateCount) {
+      notes.push(`${r.committedMissingCreationDateCount} committed-throughput candidate(s) were excluded because their creation date was unavailable.`);
+    }
+    const snapshot = mode === "run" ? (r.snapshots || [])[index] : null;
     if (mode === "run" && !r.weeks[index].current &&
         (r.historicalDataIncomplete || (snapshot && snapshot.statusUnavailableCount))) {
       notes.push("Some complete status histories could not be reconstructed; affected historical values are unavailable and excluded from reconstructed stocks.");
     }
     if (!r.weeks[index].current) {
-      notes.push(`The key figures and ticket lists describe the historical week of ${r.weeks[index].label}.`);
+      notes.push(`The key figures and ticket lists describe the historical week ${r.weeks[index].label}.`);
     }
     info.classList.toggle("hidden", !notes.length);
     info.textContent = notes.join(" ");
@@ -138,30 +144,30 @@
     document.body.classList.toggle("no-current-week", !cur);
     document.querySelectorAll(".pill-current").forEach((el) => {
       el.textContent = cur ? "current" : `selected: ${label}`;
-      el.title = cur ? "Current week (incomplete)" : `Selected historical week of ${label}`;
+      el.title = cur ? "Current week (in progress)" : `Selected historical week ${label}`;
     });
     document.querySelectorAll(".week-context").forEach((el) => {
       el.innerHTML = cur
         ? 'the <strong>current week</strong> ("current" badge)'
-        : `the <strong>selected week of ${label}</strong>`;
+        : `the <strong>selected week ${label}</strong>`;
     });
     document.querySelectorAll(".week-context-short").forEach((el) => {
-      el.textContent = cur ? "the current week" : `the selected week of ${label}`;
+      el.textContent = cur ? "the current week" : `the selected week ${label}`;
     });
     document.querySelectorAll(".week-context-plain").forEach((el) => {
-      el.textContent = cur ? "current week" : `selected week of ${label}`;
+      el.textContent = cur ? "current week" : `selected week ${label}`;
     });
     document.querySelectorAll(".week-context-cap").forEach((el) => {
-      el.textContent = cur ? "Current week" : `Selected week of ${label}`;
+      el.textContent = cur ? "Current week" : `Selected week ${label}`;
     });
     document.querySelectorAll(".legend-current").forEach((el) => {
-      el.classList.toggle("hidden", r.currentWeekIndex == null || r.currentWeekIndex < 0);
+      el.classList.toggle("hidden", chartCurrentIndex(r) < 0);
     });
     return { isCurrent: cur, label };
   }
 
   function chartCurrentIndex(r) {
-    return r.currentWeekIndex == null ? (r.hasCurrentWeek ? r.currentIndex : -1) : r.currentWeekIndex;
+    return r.weeks.findIndex((period) => period.current);
   }
 
   function chartOptions(r, index) {
@@ -174,12 +180,15 @@
 
   function setChartScrolling(r) {
     document.querySelectorAll(".chart-box").forEach((box) => {
-      const weekly = !box.contains($("runDailyChart"));
-      const scrollable = r.periodMode === "complete" && weekly;
+      const type = box.dataset.chartType || "weekly";
+      const statusTime = type === "status-time";
+      const scrollable = statusTime || (r.periodMode === "complete" && (type === "weekly" || type === "week"));
       box.classList.toggle("chart-scroll", scrollable);
       box.tabIndex = scrollable ? 0 : -1;
       if (scrollable) {
-        box.setAttribute("aria-label", `Scrollable ${r.weeks.length}-week chart`);
+        box.setAttribute("aria-label", statusTime
+          ? "Scrollable average time by status comparison chart. Use the horizontal scrollbar to view all statuses."
+          : `Scrollable ${r.weeks.length}-week chart`);
       } else {
         box.removeAttribute("aria-label");
       }
@@ -191,6 +200,186 @@
     $("runView").classList.toggle("hidden", mode !== "run");
   }
 
+  function fmtStatusDays(hours) {
+    return `${(hours / 24).toFixed(hours / 24 < 10 ? 1 : 0)} d`;
+  }
+
+  // The observed-period average remains independent of Week's KPIs. Each
+  // status also carries a local weekly aggregate so the selected week can be
+  // compared without another JIRA request.
+  function renderStatusTimeCharts(mode, statusDuration, index, week) {
+    const prefix = mode === "run" ? "run" : "build";
+    const panel = $(`${prefix}StatusTimePanel`);
+    const message = $(`${prefix}StatusTimeMessage`);
+    const content = panel.querySelector(".status-time-content");
+    const average = $(`${prefix}StatusTimeAverageChart`);
+    average.innerHTML = "";
+    panel.classList.remove("hidden");
+    if (!statusDuration || !statusDuration.enabled) {
+      message.textContent = statusDuration && statusDuration.reason
+        ? statusDuration.reason
+        : "Configure the ordered Kanban flow statuses for this team.";
+      content.classList.add("hidden");
+      return;
+    }
+    const statuses = statusDuration.statuses || [];
+    if (!statuses.length || statusDuration.hasObservedIntervals === false) {
+      message.textContent = "No time was observed in the configured flow statuses during this analysis period.";
+      content.classList.add("hidden");
+      return;
+    }
+    const notices = [];
+    if (statusDuration.invalidDoneStatuses && statusDuration.invalidDoneStatuses.length) {
+      notices.push(`Closing status(es) omitted from the flow: ${statusDuration.invalidDoneStatuses.join(", ")}.`);
+    }
+    if (statusDuration.incompleteIssueCount) {
+      notices.push(`${statusDuration.incompleteIssueCount} ticket(s) with incomplete changelogs were excluded.`);
+    }
+    if (statusDuration.partialIssueCount) {
+      notices.push(`${statusDuration.partialIssueCount} ticket(s) have an unknown initial status; only known intervals were counted.`);
+    }
+    message.textContent = notices.join(" ");
+    content.classList.remove("hidden");
+    const selected = statuses.map((status) => (status.weekly || [])[index] || {});
+    const observedValues = statuses.map((status) => status.averageHours == null ? null : status.averageHours / 24);
+    const selectedValues = selected.map((entry) => entry.averageHours == null ? null : entry.averageHours / 24);
+    // The threshold applies independently to both displayed averages. This
+    // keeps the visual marker tied to the exact bar that needs attention.
+    const observedAlerts = observedValues.map((value) => value != null && value > 2);
+    const selectedAlerts = selectedValues.map((value) => value != null && value > 2);
+    const labels = statuses.map((status, i) =>
+      `${status.name}${status.isBoardEntry ? " (Board)" : ""}${observedAlerts[i] || selectedAlerts[i] ? " ⚠" : ""}`
+    );
+    const description = statuses.map((status, i) => {
+      const current = selected[i];
+      const board = status.isBoardEntry ? " Board-entry status." : "";
+      const observedAlert = observedAlerts[i] ? " Alert: observed-period average is above 2 days." : "";
+      const selectedAlert = selectedAlerts[i] ? ` Alert: ${week.label} average is above 2 days.` : "";
+      return `${status.name}: observed period ${status.averageHours == null ? "not available" : fmtStatusDays(status.averageHours)}; ` +
+        `${week.label} ${current.averageHours == null ? "not available" : fmtStatusDays(current.averageHours)}.${board}${observedAlert}${selectedAlert}`;
+    }).join(" ");
+    JKDCharts.groupedBarChart(average, {
+      title: "Average time by status: observed period and selected week",
+      description,
+      unit: "days",
+      labels,
+      series: [
+        {
+          label: "Observed analysis period",
+          values: observedValues,
+          valueTexts: observedValues.map((value) => value == null ? "–" : `${value.toFixed(value < 10 ? 1 : 0)} d`),
+          className: "status-time-observed",
+          alertValues: observedAlerts,
+        },
+        {
+          label: `Selected week (${week.label})`,
+          values: selectedValues,
+          valueTexts: selectedValues.map((value) => value == null ? "–" : `${value.toFixed(value < 10 ? 1 : 0)} d`),
+          className: "status-time-selected",
+          alertValues: selectedAlerts,
+        },
+      ],
+      categoryClassNames: statuses.map((status) =>
+        status.isBoardEntry ? "status-time-board-category" : ""
+      ),
+      minBandWidth: 132,
+    });
+  }
+
+  function durationScopeLabel(scope) {
+    const types = scope && scope.issueTypes && scope.issueTypes.length ? scope.issueTypes.join(", ") : "all issue types";
+    if (scope && scope.startStatus) {
+      const fallback = scope.fallbackEnabled ? "; fallback to common non-Done time" : "";
+      return `${types} • from “${scope.startStatus}” to Done${fallback}`;
+    }
+    const statuses = scope && scope.statuses && scope.statuses.length ? scope.statuses.join(", ") : "creation to Done (legacy)";
+    return `${types} • ${statuses}`;
+  }
+
+  function durationDetail(value, included, available, excludedLabel, reason, fallbackUsed) {
+    if (!included) return { text: "–", info: null, title: excludedLabel };
+    if (!available || value == null) {
+      const title = reason === "start-not-reached"
+        ? "Excluded: the configured start status was never reached before closing."
+        : reason === "fallback-unavailable"
+          ? "Unavailable: the start status was not reached and the common non-Done status history could not be reconstructed."
+          : reason === "history-incomplete"
+            ? "Unavailable: the required JIRA status history is incomplete."
+            : "Unavailable: the required JIRA status history could not be reconstructed.";
+      return { text: "–", info: null, title };
+    }
+    return {
+      text: fmtDays(value),
+      info: cycleInfo(value),
+      title: fallbackUsed
+        ? "Lead Time fallback: the start status was not reached; common non-Done status time was counted from creation."
+        : "",
+    };
+  }
+
+  function renderLeadOverview(r) {
+    const overview = r.leadOverview || {};
+    const scope = durationScopeLabel(r.durationFilters && r.durationFilters.lead);
+    const note = $("leadFilterNote");
+    $("leadAggLabel").textContent = "(observed period · days)";
+    $("leadValue").textContent = fmtDays(overview.averageClosedDays);
+    const epicScopeNote = `Query scope: selected project + Epic type; project Additional JQL and Issue types counted are not applied. Lead Time filters: ${scope}.`;
+    note.textContent = overview.closedQueryAvailable === false
+      ? `Epic closure query unavailable · ${epicScopeNote}`
+      : overview.closedIssueCount
+        ? `${overview.closedAvailableCount}/${overview.closedIssueCount} matching Epic closures included · ${epicScopeNote}`
+        : `No matching Epic closure in the observed period · ${epicScopeNote}`;
+
+    const latestValue = $("leadLatestValue");
+    const latestNote = $("leadLatestNote");
+    const latest = overview.latestClosed;
+    latestValue.textContent = latest && latest.leadAvailable ? fmtDays(latest.leadDays) : "–";
+    latestNote.replaceChildren();
+    if (!latest) {
+      latestNote.textContent = overview.closedQueryAvailable === false
+        ? "Epic closure data could not be loaded from JIRA; refresh or check the connection."
+        : "No matching Epic closed during the observed period.";
+    } else {
+      const link = document.createElement("a");
+      link.href = latest.url;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = latest.key;
+      latestNote.append(link, ` — closed ${fmtDate(latest.doneDate)}`);
+      if (latest.summary) latestNote.append(` · ${latest.summary}`);
+      if (!latest.leadAvailable) {
+        const reason = latest.leadExclusionReason === "history-incomplete"
+          ? "Lead Time unavailable: the JIRA status history is incomplete."
+          : latest.leadExclusionReason === "fallback-unavailable"
+            ? "Lead Time unavailable: the required common-status history could not be reconstructed."
+            : latest.leadExclusionReason === "start-not-reached"
+              ? "Lead Time unavailable: the configured start status was not reached and fallback is disabled."
+              : "Lead Time unavailable for this ticket.";
+        latestNote.append(` · ${reason}`);
+      } else if (latest.leadFallbackUsed) {
+        latestNote.append(" · calculated with the common non-Done status fallback");
+      }
+    }
+
+    const growingValue = $("leadGrowingValue");
+    const growingNote = $("leadGrowingNote");
+    growingValue.textContent = fmtDays(overview.growingAverageDays);
+    if (overview.openQueryAvailable === false) {
+      growingNote.textContent = "Current open-Epic data could not be loaded from JIRA; refresh or check the connection.";
+    } else if (!overview.openIssueCount) {
+      growingNote.textContent = "No matching Epic is currently outside a Done status.";
+    } else if (!overview.openAvailableCount) {
+      growingNote.textContent =
+        `No usable Lead Time history for ${overview.openIssueCount} matching open Epic(s); ` +
+        "incomplete history or an unreached start without an available fallback.";
+    } else {
+      growingNote.textContent =
+        `Mean of ${overview.openAvailableCount} of ${overview.openIssueCount} matching open Epic(s), ` +
+        `as of ${new Date(overview.asOf).toLocaleString("en-GB")}` +
+        (overview.openFallbackCount ? ` · fallback used for ${overview.openFallbackCount}` : "") + ".";
+    }
+  }
+
   function renderResult(project, r, index) {
     hideStatus();
     $("dashboard").classList.remove("hidden");
@@ -198,8 +387,7 @@
 
     const last = (arr) => arr[arr.length - 1];
     const aggLabel = r.aggregate === "average" ? "(average)" : "(median)";
-    $("leadAggLabel").textContent = aggLabel;
-    $("cycleAggLabel").textContent = aggLabel;
+    const values = r;
 
     renderComparisonNote(r, index, "build");
     const ctx = applyWeekContext(r, index);
@@ -208,14 +396,14 @@
     // Cards
     const curLabel = r.weeks[index].label;
     const weekPhrase = ctx.isCurrent
-      ? `current week of ${curLabel} (incomplete)`
-      : `week of ${curLabel}`;
-    $("thrValue").textContent = r.throughput[index];
+      ? `current week ${curLabel} (incomplete)`
+      : `week ${curLabel}`;
+    $("thrValue").textContent = values.throughput[index];
     $("thrNote").textContent = `completed tickets — ${weekPhrase}`;
-    $("engageValue").textContent = r.hasEngage ? r.throughputEngage[index] : "–";
+    $("engageValue").textContent = r.hasEngage ? values.throughputEngage[index] : "–";
     $("engageNote").textContent = r.hasEngage
-      ? `tickets on the board (${r.engageLabel}) — week of ${curLabel}`
-      : "Set the team's board statuses (⚙ Settings).";
+      ? `Waiting / Work in progress only during ${r.engageLabel} — week ${curLabel}; Workflow end is excluded; carryovers can count again`
+      : "Set the team's Waiting or Work in progress statuses (⚙ Settings).";
     // Story points (per-team option): card + chart + column hidden
     // until the option is enabled / the JIRA field is found.
     const spOn = !!r.hasStoryPoints;
@@ -225,12 +413,12 @@
       .querySelectorAll("#detailTable .sp-col")
       .forEach((th) => th.classList.toggle("hidden", !spOn));
     if (spOn) {
-      $("spValue").textContent = fmtPoints(r.storyPointsWeekly[index]);
+      $("spValue").textContent = fmtPoints(values.storyPointsWeekly[index]);
       $("spNote").textContent =
-        `points delivered on ${r.storyPointsCounts[index]} estimated ticket(s) — ` +
+        `points delivered on ${values.storyPointsCounts[index]} estimated ticket(s) — ` +
         weekPhrase;
       trendBadge("spTrend", JKDMetrics.computeTrend(
-        r.storyPointsWeekly, cfg.stableThresholdPct, true, index
+        values.storyPointsWeekly, cfg.stableThresholdPct, true, index
       ));
     } else if (r.trackStoryPoints) {
       // Option enabled but field not found: flagged without blocking.
@@ -241,21 +429,22 @@
       trendBadge("spTrend", { direction: "na", pct: null, good: null });
     }
 
-    $("leadValue").textContent = fmtDays(r.leadWeekly[index]);
+    renderLeadOverview(r);
     $("cycleValue").textContent = fmtDays(r.cycleWeekly[index]);
+    $("cycleFilterNote").textContent = `days — ${durationScopeLabel(r.durationFilters && r.durationFilters.cycle)} — ${weekPhrase}`;
+    $("cycleAggLabel").textContent = aggLabel;
+    trendBadge("cycleTrend", JKDMetrics.computeTrend(r.cycleWeekly, cfg.stableThresholdPct, false, index));
 
     if ($("engageLegend")) {
       $("engageLegend").textContent = r.engageLabel
-        ? `Committed (board ${r.engageLabel})`
+        ? `Committed (Waiting / WIP ${r.engageLabel})`
         : "Committed";
     }
 
-    trendBadge("thrTrend", JKDMetrics.computeTrend(r.throughput, cfg.stableThresholdPct, true, index));
+    trendBadge("thrTrend", JKDMetrics.computeTrend(values.throughput, cfg.stableThresholdPct, true, index));
     trendBadge("engageTrend", r.hasEngage
-      ? JKDMetrics.computeTrend(r.throughputEngage, cfg.stableThresholdPct, true, index)
+      ? JKDMetrics.computeTrend(values.throughputEngage, cfg.stableThresholdPct, true, index)
       : { direction: "na", pct: null, good: null });
-    trendBadge("leadTrend", JKDMetrics.computeTrend(r.leadWeekly, cfg.stableThresholdPct, false, index));
-    trendBadge("cycleTrend", JKDMetrics.computeTrend(r.cycleWeekly, cfg.stableThresholdPct, false, index));
 
     const labels = r.weeks.map((w) => w.label);
     // Committed + delivered throughput on the same chart (grouped bars).
@@ -263,14 +452,14 @@
     if (r.hasEngage) {
       series.push({
         label: "Committed throughput",
-        values: r.throughputEngage,
+        values: values.throughputEngage,
         className: "bar-engage",
         currentClassName: "bar-engage-current",
       });
     }
     series.push({
       label: "Delivered throughput",
-      values: r.throughput,
+      values: values.throughput,
       className: "bar-done",
       currentClassName: "bar-done-current",
     });
@@ -288,7 +477,7 @@
         series: [
           {
             label: "Delivered story points",
-            values: r.storyPointsWeekly,
+            values: values.storyPointsWeekly,
             className: "bar-done",
             currentClassName: "bar-done-current",
           },
@@ -296,24 +485,13 @@
         ...chartOptions(r, index),
       });
     }
-    JKDCharts.lineChart($("leadChart"), {
-      title: "Lead time per week",
-      seriesLabel: "Lead time",
-      unit: "days",
-      labels,
-      values: r.leadWeekly,
-      ...chartOptions(r, index),
-    });
     JKDCharts.lineChart($("cycleChart"), {
-      title: "Cycle time per week",
-      seriesLabel: "Cycle time",
-      unit: "days",
-      labels,
-      values: r.cycleWeekly,
-      ...chartOptions(r, index),
+      title: `Cycle time per week (${durationScopeLabel(r.durationFilters && r.durationFilters.cycle)})`, seriesLabel: "Cycle time", unit: "days",
+      labels, values: r.cycleWeekly, ...chartOptions(r, index),
     });
+    renderStatusTimeCharts("build", r.statusDuration, index, r.weeks[index]);
 
-    // Detail table — only tickets completed in the selected reference week.
+    // Detail table — only tickets completed in the selected week.
     const tbody = $("detailTable").querySelector("tbody");
     tbody.innerHTML = "";
     const curDetails = r.details.filter((d) => d.weekIndex === index);
@@ -327,21 +505,22 @@
         `<td>${d.week}</td>` +
         `<td>${doneStr}</td>` +
         (spOn ? `<td>${fmtPoints(d.storyPoints)}</td>` : "") +
-        `<td>${fmtDays(d.leadDays)}</td>` +
-        durationCell(
-          `${fmtDays(d.cycleDays)}${d.startApprox ? " *" : ""}`,
-          cycleInfo(d.cycleDays)
-        );
+        (function () {
+          const lead = durationDetail(d.leadDays, d.leadIncluded, d.leadAvailable, "Issue type excluded by the Lead Time filter.", d.leadExclusionReason, d.leadFallbackUsed);
+          const cycle = durationDetail(d.cycleDays, d.cycleIncluded, d.cycleAvailable, "Issue type excluded by the Cycle Time filter.", d.cycleExclusionReason);
+          const leadCell = `<td${lead.title ? ` title="${escapeHtml(lead.title)}"` : ""}>${lead.text}</td>`;
+          const cycleCell = cycle.info ? durationCell(cycle.text, cycle.info) : `<td${cycle.title ? ` title="${escapeHtml(cycle.title)}"` : ""}>${cycle.text}</td>`;
+          return leadCell + cycleCell;
+        })();
       tbody.appendChild(tr);
     });
     $("detailCount").textContent = curDetails.length;
-    $("jqlText").textContent = r.jql;
+    $("jqlText").textContent =
+      `Weekly metrics: ${r.jql}\nEpic Lead Time (closed): ${r.leadEpicJql}\n` +
+      `Epic Lead Time (open): ${r.leadEpicOpenJql}`;
     $("footerInfo").textContent =
       `${project.name} • ${r.totalIssues} tickets analysed • ` +
-      `updated ${new Date().toLocaleString("en-GB")}` +
-      (r.details.some((d) => d.startApprox)
-        ? " • * approximated cycle time (no entry into an \"in progress\" status)"
-        : "");
+      `updated ${new Date().toLocaleString("en-GB")}`;
   }
 
   function fmtDate(d) {
@@ -350,9 +529,9 @@
   // Labels are rendered as individually escaped chips. An empty label set is
   // explicit rather than leaving an ambiguous blank cell.
   function labelsCell(labels) {
-    const values = Array.isArray(labels) ? labels.filter(Boolean) : [];
-    if (!values.length) return '<td class="ticket-labels">–</td>';
-    return '<td class="ticket-labels">' + values.map((label) =>
+    const labelValues = Array.isArray(labels) ? labels.filter(Boolean) : [];
+    if (!labelValues.length) return '<td class="ticket-labels">–</td>';
+    return '<td class="ticket-labels">' + labelValues.map((label) =>
       `<span class="ticket-label">${escapeHtml(label)}</span>`
     ).join("") + '</td>';
   }
@@ -400,7 +579,7 @@
 
     // Cards
     $("runOpenValue").textContent = r.openNow;
-    const openWhen = ctx.isCurrent ? "as of now" : `at the end of the week of ${curLabel}`;
+    const openWhen = ctx.isCurrent ? "as of now" : `at the end of the week ${curLabel}`;
     $("runOpenNote").textContent =
       r.openAtPrevWeekEnd == null
         ? `open ${openWhen} — no previous week to compare`
@@ -408,23 +587,23 @@
     $("runCloseValue").textContent = r.closedThisWeek;
     $("runCloseNote").textContent =
       r.closedPrevSameElapsed == null
-        ? `closed in the week of ${curLabel} — no previous week to compare`
+        ? `closed in the week ${curLabel} — no previous week to compare`
         : ctx.isCurrent
-          ? `closed in the week of ${curLabel} — vs ${r.closedPrevSameElapsed} over the same period ` +
+          ? `closed in the week ${curLabel} — vs ${r.closedPrevSameElapsed} over the same period ` +
             `of the previous week (${r.elapsedHours} h elapsed)` +
             (r.closedPrevWeek == null ? "" : ` — ${r.closedPrevWeek} over the entire previous week`)
-          : `closed in the week of ${curLabel} — vs ${r.closedPrevSameElapsed} in the previous week`;
+          : `closed in the week ${curLabel} — vs ${r.closedPrevSameElapsed} in the previous week`;
     $("runCreatedValue").textContent = r.createdThisWeek;
     $("runCreatedNote").textContent =
       r.createdPrevSameElapsed == null
-        ? `created in the week of ${curLabel} — no previous week to compare`
+        ? `created in the week ${curLabel} — no previous week to compare`
         : ctx.isCurrent
-          ? `created in the week of ${curLabel} — vs ${r.createdPrevSameElapsed} over the same period ` +
+          ? `created in the week ${curLabel} — vs ${r.createdPrevSameElapsed} over the same period ` +
             `of the previous week (${r.elapsedHours} h elapsed)` +
             (r.createdPrevWeek == null ? "" : ` — ${r.createdPrevWeek} over the entire previous week`)
-          : `created in the week of ${curLabel} — vs ${r.createdPrevSameElapsed} in the previous week`;
+          : `created in the week ${curLabel} — vs ${r.createdPrevSameElapsed} in the previous week`;
 
-    // Average resolution time of tickets closed this week. Same colour
+    // Average resolution time of tickets closed in this week. Same colour
     // coding as the duration columns in the lists: dot + tooltip, with the
     // text keeping normal contrast (never information by colour alone).
     const resolEl = $("runResolValue");
@@ -436,9 +615,9 @@
       : "–";
     $("runResolNote").textContent =
       r.avgResolutionCount === 0
-        ? `no ticket closed in the week of ${curLabel}`
+        ? `no ticket closed in the week ${curLabel}`
         : `average created → closed over ${r.avgResolutionCount} closed ticket(s) ` +
-          `in the week of ${curLabel}` +
+          `in the week ${curLabel}` +
           (r.avgResolutionPrevSameElapsed == null
             ? " — no previous week to compare"
             : ctx.isCurrent
@@ -451,51 +630,45 @@
     trendBadge("runCreatedTrend", r.trends.created);
     trendBadge("runResolTrend", r.trends.resolution);
 
-    const labels = r.weeks.map((w) => w.label);
-    // Opened (created) and closed on the same chart, week by week.
+    const labels = base.weeks.map((w) => w.label);
+    const flowOpened = base.snapshots.map((snapshot) => snapshot.createdThisWeek);
+    const flowClosed = base.snapshots.map((snapshot) => snapshot.closedThisWeek);
+    // Opened (created) and closed by week.
     JKDCharts.groupedBarChart($("runFlowChart"), {
       title: "Tickets opened and closed per week",
       labels,
       series: [
-        { label: "Opened", values: r.openCount, className: "bar-open", currentClassName: "bar-open-current" },
-        { label: "Closed", values: r.closeCount, className: "bar-closed", currentClassName: "bar-closed-current" },
+        { label: "Opened", values: flowOpened, className: "bar-open", currentClassName: "bar-open-current" },
+        { label: "Closed", values: flowClosed, className: "bar-closed", currentClassName: "bar-closed-current" },
       ],
       ...chartOptions(base, index),
     });
-    // Creations per day: selected reference week vs previous loaded week.
-    // Weekdays (Mon→Fri) are always displayed; Saturday and Sunday only
-    // appear if either compared week has at least one creation.
-    const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    const dayIdx = [0, 1, 2, 3, 4];
-    [5, 6].forEach((d) => {
-      const cur = r.createdPerDayCurrent[d] || 0;
-      const prev = r.createdPerDayPrev ? r.createdPerDayPrev[d] || 0 : 0;
-      if (cur > 0 || prev > 0) dayIdx.push(d);
-    });
-    const pickDays = (arr) => dayIdx.map((d) => arr[d] || 0);
-    const daySeries = [];
+    // Creation trend by day across the selected week.
+    const currentDays = r.createdPerDayCurrent || [];
+    const previousDays = r.createdPerDayPrev || [];
+    const dailyLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].slice(0, currentDays.length);
+    const dailySeries = [];
     if (r.createdPerDayPrev) {
-      daySeries.push({ label: "Previous week", values: pickDays(r.createdPerDayPrev), className: "bar-open" });
+      dailySeries.push({ label: "Previous week", values: previousDays, className: "bar-open" });
     }
-    daySeries.push({
-      label: ctx.isCurrent ? "Current week" : `Week of ${curLabel}`,
-      values: pickDays(r.createdPerDayCurrent),
+    dailySeries.push({
+      label: ctx.isCurrent ? "Current week" : curLabel,
+      values: currentDays,
       className: ctx.isCurrent ? "bar-done-current" : "bar-done",
     });
     JKDCharts.groupedBarChart($("runDailyChart"), {
-      title: "Tickets created per day",
-      labels: dayIdx.map((d) => dayNames[d]),
-      series: daySeries,
+      title: "Tickets created per calendar day",
+      labels: dailyLabels,
+      series: dailySeries,
       currentIndex: -1,
+      minBandWidth: 38,
     });
     const sum = (a) => a.reduce((x, y) => x + y, 0);
-    const dailyWhen = ctx.isCurrent
-      ? `this week (${r.elapsedDays} day(s) elapsed)`
-      : `in the week of ${curLabel}`;
+    const dailyWhen = ctx.isCurrent ? "in the current week so far" : `in week ${curLabel}`;
     $("runDailyNote").textContent = r.createdPerDayPrev
-      ? `${sum(r.createdPerDayCurrent)} ticket(s) created ${dailyWhen} ` +
-        `vs ${sum(r.createdPerDayPrev)} over the entire previous week.`
-      : `${sum(r.createdPerDayCurrent)} ticket(s) created ${dailyWhen} — no previous week to compare.`;
+      ? `${sum(currentDays)} ticket(s) created ${dailyWhen} vs ${sum(previousDays)} in the previous week.`
+      : `${sum(currentDays)} ticket(s) created ${dailyWhen} — no previous week to compare.`;
+    renderStatusTimeCharts("run", base.statusDuration, index, base.weeks[index]);
 
     // Open table
     const openBody = $("runOpenTable").querySelector("tbody");
@@ -608,6 +781,7 @@
   }
 
   function renderSignals(r, index) {
+    const values = r;
     const panel = $("signalsPanel");
     const tbody = $("signalsTable").querySelector("tbody");
     const note = $("currentSignals");
@@ -629,18 +803,18 @@
         : `<td class="sig-zero">0</td>`;
     r.weeks.forEach((w, i) => {
       const tr = document.createElement("tr");
-      if (i === r.currentWeekIndex) tr.classList.add("row-current");
+      if (w.current) tr.classList.add("row-current");
       if (i === index) tr.classList.add("row-selected");
       const wl = w.current ? `${w.label} (current)` : w.label;
       tr.innerHTML =
-        `<td>${wl}</td>` + cell(r.readyAdded[i]) + cell(r.backlogReturned[i]);
+        `<td>${wl}</td>` + cell(values.readyAdded[i]) + cell(values.backlogReturned[i]);
       tbody.appendChild(tr);
     });
-    // Summary of the reference week (answers to "was there any, how many").
+    // Summary of the selected week (answers to "was there any, how many").
     const ci = index;
-    const when = r.weeks[ci].current ? "this week" : `in the selected week of ${r.weeks[ci].label}`;
-    const added = r.readyAdded[ci];
-    const back = r.backlogReturned[ci];
+    const when = r.weeks[ci].current ? "this week" : `in the selected week ${r.weeks[ci].label}`;
+    const added = values.readyAdded[ci];
+    const back = values.backlogReturned[ci];
     const parts = [];
     parts.push(
       added > 0
@@ -664,8 +838,59 @@
   // --- Export of the full metrics page as an image ---------------------
 
   function setExportEnabled(on) {
-    const btn = $("exportBtn");
-    if (btn) btn.disabled = !on;
+    ["exportBtn", "markdownDownloadBtn", "markdownCopyBtn"].forEach((id) => {
+      const btn = $(id);
+      if (btn) btn.disabled = !on;
+    });
+  }
+
+  function markdownExport() {
+    if (!loadedResult || !loadedProject || selectedWeekIndex < 0 ||
+        typeof JKDMarkdown === "undefined") return null;
+    return JKDMarkdown.build({
+      project: loadedProject,
+      mode: loadedMode,
+      result: loadedResult,
+      selectedWeekIndex: selectedWeekIndex,
+      stableThresholdPct: cfg.stableThresholdPct,
+      detailLevel: $("markdownLevel").value === "analysis" ? "analysis" : "summary",
+    });
+  }
+
+  function downloadMarkdown() {
+    const data = markdownExport();
+    if (!data) return;
+    try {
+      JKDMarkdown.download(data.markdown, data.fileName);
+      const detailed = $("markdownLevel").value === "analysis";
+      setStatus(`Markdown saved: ${data.fileName} (${detailed ? "ticket lists included" : "summary only"}).`);
+      setTimeout(hideStatus, 6000);
+    } catch (e) {
+      console.error(e);
+      setStatus(`Markdown export failed: ${e.message}`, "error");
+    }
+  }
+
+  async function copyMarkdown() {
+    const btn = $("markdownCopyBtn");
+    const data = markdownExport();
+    if (!data) return;
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "… Copying";
+    try {
+      await JKDMarkdown.copy(data.markdown);
+      btn.textContent = "✓ Copied";
+      setStatus("Markdown copied to the clipboard. Paste it into your AI agent or editor.");
+      setTimeout(() => { btn.textContent = label; }, 3000);
+      setTimeout(hideStatus, 6000);
+    } catch (e) {
+      console.error(e);
+      setStatus(`Markdown could not be copied: ${e.message}`, "error");
+      btn.textContent = label;
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   async function exportImage() {
@@ -689,7 +914,7 @@
       const res = await JKDExport.exportNode($("dashboard"), {
         format,
         name: lastRender.project.name,
-        openDetails: includeDetails,
+        includeDetails,
       });
       const ko = Math.round(res.bytes / 1024);
       setStatus(
@@ -846,6 +1071,8 @@
       runAnalysis();
     });
     $("exportBtn").addEventListener("click", exportImage);
+    $("markdownDownloadBtn").addEventListener("click", downloadMarkdown);
+    $("markdownCopyBtn").addEventListener("click", copyMarkdown);
     $("optionsBtn").addEventListener("click", () => api.runtime.openOptionsPage());
 
     checkUpdate();

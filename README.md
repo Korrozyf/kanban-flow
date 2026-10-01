@@ -2,7 +2,7 @@
 
 Browser extension (Chrome + Firefox) that connects to **JIRA Cloud** and displays,
 team by team, the Kanban flow metrics useful for a Kanban facilitator: **throughput**,
-**lead time**, **cycle time**, and their **trends**.
+**lead time**, **cycle time**, and weekly trends where applicable.
 
 ## About this project
 
@@ -25,36 +25,37 @@ open an issue if something looks wrong.
   and offers an assisted update in the settings page.
 - **Independent Build and Run periods**, chosen on the dashboard and loaded only after
   **Apply**:
-  - **Last weeks** (default) always loads the current week and the four previous weeks,
-    independently of the configured start date.
-  - **Since start date** loads the first weeks from the week containing the shared
-    start date, capped at **52 weeks**. The date is set in each mode's Analysis period
-    section and stays synchronised between Build and Run. If the cap excludes newer
-    weeks, the exact loaded range and the truncation are announced. With no start date,
-    it falls back to Last weeks.
-  - Each mode remembers its own choice. After loading, the last week is selected.
+  - **Last weeks** (default) loads the current week and four preceding weeks.
+  - **Since start date** loads up to the first **52 weeks** from the shared Start date.
+    The date stays synchronised between Build and Run. With no Start date, it falls
+    back to Last weeks.
+  - Each mode remembers its own choice. After loading, the final week is selected.
   - A **Week's KPIs** selector updates KPI cards, trends and ticket lists locally,
-    with no new JIRA request. Its trend compares it to the immediately preceding loaded
-    week; the first loaded week has no comparison.
+    with no new JIRA request. Its trend compares it to the preceding loaded week;
+    the first loaded week has no comparison.
   - Since start date charts are horizontally scrollable and keyboard-focusable.
-- **Delivered throughput** for every loaded week (Monday → Sunday). The true
-  **current (incomplete) week**, when loaded, is shown in yellow; the selected
-  historical week has a separate outlined encoding.
-- **Committed throughput**: number of tickets present in a **board status during the
-  "committed" counting window** (default Monday 00:00→12:00, **configurable**) — this
-  is a snapshot on that window, not a count of transitions. It is shown **on the same
-  chart as delivered throughput** (grouped bars: committed in purple, delivered in
-  blue) + card + trend.
+- **Delivered throughput** is counted in Monday-to-Monday calendar weeks. The true
+  **current week (incomplete)** is shown in yellow; a selected historical week has a
+  separate outlined encoding.
+- **Status-time analysis** (Build and Run): one comparison chart shows **average time
+  per ticket** in the whole loaded analysis period alongside the selected week's average,
+  for the configured ordered Kanban flow statuses. Intervals are reconstructed from JIRA
+  changelogs and clipped to each period; statuses with no observed time remain visible as
+  unavailable. Every status averaging more than two days has an explicit `⚠` label
+  and red dashed marker. Board statuses remain visible and distinctly patterned.
+- **Committed throughput**: number of tickets in a configured **Waiting or Work in
+  progress status** during the configurable Committed counting window (default Monday
+  00:00→12:00). Workflow end and Backlog statuses are excluded. The project key, selected
+  Issue types counted, and Additional JQL scope the JIRA query; the configured day/start/end
+  are checked against each ticket's changelog using `[start, end)`. This is a weekly stock
+  snapshot, not a transition count: a carryover can count again in each week it remains in
+  an eligible status. It is shown on the delivered-throughput chart, card, and trend.
 - **Current-week color code**: in the **charts** (bars, lines) and the flow signals
   table, current-week data uses **warm** tones — delivered in **yellow**, committed in
-  **amber**, dashed yellow lines — while **completed weeks** stay **blue / purple**. On
-  the top-of-page **cards** (**build and run**), the figure stays in the normal text
-  color (yellow is reserved for alerts): current-week status is conveyed by the
-  "current" badge and the card border.
-  The warm encoding is applied **only to a week that really is the current week**.
-  A selected historical reference keeps completed-week colors and receives a distinct
-  outline/label; its cards name the selected date rather than claiming it is current.
-  If the current week is outside a truncated Since start date range, no warm mark is shown.
+  **amber**, dashed yellow lines — while completed weeks stay **blue / purple**. On
+  top-of-page cards (Build and Run), the figure stays in normal text color: current
+  status is conveyed by the "current" badge and card border. A selected historical
+  reference keeps completed-week colors and receives a distinct outline/label.
 - **Accessibility**: every text/background pair in both pages meets the **WCAG AA**
   contrast ratio (4.5:1 normal text, 3:1 large text and non-text indicators), checked
   against the rendered pages in a real browser. No information is ever carried by
@@ -65,11 +66,10 @@ open an issue if something looks wrong.
   are respected.
 - **Story points (per-team option)**: if the *"Track story points"* option is enabled
   for a build team, the dashboard adds a **card** "Delivered story points" for the
-  selected reference week, a **weekly chart** below the throughput, and a **"Story
+  selected reference week, an **weekly chart** below the throughput, and a **"Story
   points" column** in the completed tickets list (before lead / cycle time). The
   corresponding JIRA field is auto-detected, or can be forced in settings.
-- **Chart layout (build)**: the throughput chart spans the full width; lead time and
-  cycle time sit side by side below it.
+- **Chart layout (build)**: throughput and cycle-time charts span the full width. Lead Time is shown as three period-based indicators: the latest matching closure, the mean of matching tickets closed in the observed period, and the growing mean for matching tickets still outside Done.
 - **Ticket labels in every ticket list**: a **Labels** column immediately follows
   **Summary** in Build and Run. Each JIRA label is displayed as a readable chip; an
   em dash means the ticket has no label.
@@ -81,29 +81,45 @@ open an issue if something looks wrong.
   Friday, **configurable**), with a ⚠ alert when there are any. The current week is
   highlighted (yellow row) and a summary shows whether there were additions / removals
   and how many.
-- **Issue types counted (per team, both modes)**: restrict every query to the types you
-  track. A *Load types from JIRA* button lists the project's real type names as
-  checkboxes, so there is no typo, casing or language problem. Empty = all types.
+- **Issue types counted (per team, both modes)**: restrict the shared metric queries to
+  the types you track. Project issue types are fetched automatically after entering the
+  JIRA project key or focusing an issue-type setting, and appear as checkboxes; there is
+  no separate load action. Empty = all types. The Build Epic Lead Time overview uses a
+  dedicated project + Epic query and intentionally ignores this project-wide filter.
 - **Configurable counting windows** (global setting): day and hours of the "committed"
   window and the "additions / removals" window. Labels shown in the dashboard follow
   the chosen values automatically.
-- **Trends = selected reference week compared to its previous loaded week**
-  (top-of-page cards, both build and run). For the true current week, Run comparisons
-  retain the same-elapsed-time basis.
+- **Weekly trends = selected reference week compared to its previous loaded week**
+  (weekly KPI cards in Build and Run). For the true current week, Run comparisons
+  retain the same-elapsed-time basis. The Epic Lead Time overview summarizes the full observed period and has no weekly trend.
 - **Export / import of settings** as JSON (API token excluded by default) so you don't
   have to re-enter everything after a reinstall — see "Updating the extension".
 - **Export the dashboard as an image** (PNG or JPG): `🖼 Export image` button in the top
   bar. The capture covers the **entire metrics page** (not just the visible area),
   with a header showing team / mode / period / generation date. Ticket lists stay
-  **collapsed by default** to avoid disclosing ticket-level data; explicitly tick
-  *Include ticket lists* when that content belongs in the image. ×2 resolution
+  **collapsed in the image by default**, even if a list is open on screen, to avoid
+  disclosing ticket-level data; explicitly tick *Include ticket lists* when that
+  content belongs in the image. ×2 resolution
   (readable in a meeting or report). The file is saved
   to the browser's download folder as `kanban-flow_<team>_<date>_<time>.png|jpg`.
-- **Lead time** per week and **cycle time** per week (lines, median or average).
-- **Trends** (up / stable / down) for each metric, color-coded: green = improvement,
-  red = degradation, blue = stable.
-- **Per-team configurable statuses**: you define precisely which JIRA statuses mark the
-  *start of work* (cycle time) and the *end* (throughput / lead / cycle).
+- **Export displayed data as Markdown**: choose **Markdown: Summary** for metadata,
+  Week's KPIs, the Epic Lead Time overview, trends, weekly series and interpretation notes
+  without ticket keys; choose **Markdown: Analysis-ready (ticket lists)** only when
+  ticket-level data is appropriate to share. **Download Markdown** saves the mode currently shown;
+  **Copy Markdown** places identical content on the clipboard for an AI agent or editor.
+  The export never includes JIRA ticket descriptions and is generated locally.
+- **Weekly trends** (up / stable / down) for weekly flow metrics, color-coded: green =
+  improvement, red = degradation, blue = stable. Lead Time uses period-based indicators
+  rather than a weekly trend.
+- **Per-team Lead Time and Cycle Time settings**: independently select issue types and
+  a start status for each duration metric and each Build team. Project issue types and
+  applicable workflow statuses load automatically from that team's JIRA project as the
+  relevant settings are used; there are no manual load buttons. Status choices are
+  limited to those common to all selected types. The selected start status is included,
+  time before it is excluded, and every JIRA green Done-category status is the automatic
+  exclusive end boundary. By default, if a ticket never reaches the Lead start status,
+  Lead Time falls back to the time spent in all common non-Done statuses from creation
+  to the final Done entry. This fallback can be disabled per Build team.
 - Collapsible list of tickets completed **in the selected reference week** + the JQL
   used (calculation transparency).
 - 100% local: credentials and token stored in the browser, no third-party server, no
@@ -116,29 +132,32 @@ open an issue if something looks wrong.
 > **step-by-step calculation**, and **which of your settings changes what**. The tables
 > below are the summary.
 
-For each ticket completed in the analyzed window:
+Build metrics use weekly completed-ticket windows unless a row states otherwise:
 
 | Metric | Calculation |
 |--------------|--------|
 | **Delivered throughput** | Number of tickets entering a "Done" status during the week (Mon→Sun). |
-| **Committed throughput** | Number of tickets **in a board status during the "committed" counting window** (default Monday 00:00→12:00, configurable) — a snapshot reconstructed from history (the ticket counts if it was on the board at any point during that window), not a count of transitions. Shown on the same chart as delivered. |
+| **Committed throughput** | Number of tickets **in a Waiting or Work in progress status** during the configured Committed counting window (default Monday 00:00→12:00). Scoped by JIRA project key, Additional JQL, and selected Issue types counted; Workflow end and Backlog are excluded. Day/start/end are checked against the changelog with an inclusive start and exclusive end. A carryover can count once in every week it remains in an eligible status. |
 | **Added to board** | Number of tickets **placed in a board status** (from any other status) during the **"additions / removals" counting window** (default Monday 12:00 → end of Friday, configurable) of the same week (scope added mid-week). |
 | **Moved back to backlog** | Number of tickets **placed in a "Backlog" / "To do" status** (from any other status) during the same **"additions / removals" counting window** (default Monday 12:00 → end of Friday, configurable). |
 | **Delivered story points** | Sum of story points of tickets **completed during the week** (per-team option to enable). Unestimated tickets excluded from the sum. |
-| **Lead time**  | `end date − creation date` (days). |
-| **Cycle time** | `end date − 1st entry into an "In progress" status` (days). |
+| **Lead time**  | Epic-specific indicators: latest Epic closure, mean Lead Time of Epics closed in the observed period, and growing mean for currently open Epics. Dedicated project + Epic queries intentionally ignore project-level Additional JQL and Issue types counted; the separate Lead Time issue-type selection and duration settings still apply. The configured start status is included, Done intervals are excluded, and the enabled fallback applies from creation when the start is not reached. |
+| **Cycle time** | For matching issue types, time from the independently configured Cycle start status (included) to the final Done boundary (excluded), counting only non-Done intervals. With no Cycle start selected, it is elapsed time from issue creation to the closing boundary; the Workflow status setup does not supply a start. |
 
-- **End date** = last transition into one of your "Done" statuses.
-- **Start date** = first transition into one of your "In progress" statuses
-  (if none, cycle time is approximated on the creation date — flagged with `*`).
-- **Bounded to the start date**: if the creation date (lead time) or the first entry
-  into "in progress" (cycle time) is **earlier than the configured start date**, that
-  start date is used instead. Time elapsed before the start date is therefore never
-  counted.
-- Weekly aggregation is the **median** by default (more robust to outliers),
-  configurable to average.
-- **Trend** = comparison of the selected reference week to its immediately preceding
-  loaded week; below the "stable" threshold (10% by default), it is considered stable.
+- **End date** = the last transition into a status whose JIRA `statusCategory` is `Done`; saved Done names remain a compatibility fallback when workflow metadata cannot be loaded.
+- **Per-team duration settings** are configured separately for Lead Time and Cycle Time. Project issue types and workflow statuses load automatically from the project's Issue Type Scheme and `/project/{key}/statuses`; start-status choices are intersected across the selected types. An empty type list means all project types.
+- When a start status is selected, it is included; time before it is ignored, and time in Done-category statuses is excluded. Reopened work contributes again after re-entry into a non-Done status. A Cycle Time with no selected start uses elapsed time from creation to the closing boundary.
+- A ticket that does not reach the selected start status uses the enabled Lead fallback: all common non-Done status intervals are summed from creation to the final Done entry. This applies to every selected Lead issue type and is enabled by default. If disabled, or if the required common status history cannot be reconstructed, the Lead value is marked unavailable. Cycle Time keeps its explicit-start behavior and does not use this fallback.
+- An incomplete changelog or unknown initial status can make a reconstructed Lead/Cycle duration unavailable; the ticket remains in delivered throughput. Committed throughput separately excludes candidates whose changelog is incomplete.
+- Workflow status categories do not determine Lead Time or Cycle Time. With no explicit Cycle start selected, Cycle Time starts at issue creation; it does not infer a start from Work in progress statuses.
+- **Workflow categories are shared by Build and Run** for each team: Backlog (outside
+  the board), Waiting, Work in progress, and Workflow end. Board statuses are derived
+  from the three on-board groups. Existing saved Board statuses migrate to Waiting,
+  except those already classified as Work in progress or Done.
+- **Cycle Time** weekly aggregation is the **median** by default (more robust to
+  outliers), configurable to average. The closed-ticket Lead Time indicator is always the
+  arithmetic mean across the full observed period, independent of the weekly aggregation setting.
+- **Weekly trends** compare the selected reference week to its immediately preceding loaded week; at or below the "stable" threshold (10% by default), the change is considered stable. Lead Time is period-based and has no weekly trend.
 
 ## Run mode (support / run Kanban)
 
@@ -160,14 +179,17 @@ selected reference week without presenting a historical selection as current. Me
 | **Highest priority** | Snapshot at the selected cut-off, sorted by priority then creation date, with first-comment and resolution delays. |
 
 - "Highest" priorities are configurable per team (e.g. `Highest, Blocker`).
-- **Closing statuses** (e.g. `Done, Closed, Resolved`) are configurable per team: a
-  ticket in one of them is excluded from the metrics, like a resolved ticket.
+- **Workflow categories** (Backlog, Waiting, Work in progress, Workflow end) are
+  configured once per team and shared by Build and Run. Workflow end statuses close Run
+  tickets even without a resolution; Build continues to use JIRA's green Done category
+  when available, with the configured names as a compatibility fallback.
 - The **closing date** is read from the **changelog** (last entry into a closing
   status); failing that, the resolution date; as a last resort, "now", flagged with a
   `~` in the "Closed on" column. This is what makes it possible to correctly date a
   ticket closed without a resolution (e.g. `Cancelled`).
-- The **run "Backlog" statuses** distinguish unplanned open tickets from those taken
-  on the board. Historical status, backlog membership, assignee and priority are
+- The shared **Backlog statuses** distinguish unplanned open Run tickets from those
+  taken on the board, and define Build's moves-back-to-backlog signal. Historical
+  status, backlog membership, assignee and priority are
   reconstructed from complete changelogs. If JIRA cannot supply a complete history,
   the dashboard says **unavailable** rather than silently substituting today's value;
   affected tickets are excluded from reconstructed historical stocks.
@@ -188,14 +210,16 @@ its *reference event*:
 
 | Metric | Reference event |
 | --- | --- |
-| Delivered throughput, story points, lead time, cycle time | ticket **end** date |
+| Delivered throughput, story points, cycle time | ticket **end** date |
 | Additions to board, moves back to backlog | status **transition** date |
 | Open tickets (per week, run) | **creation** date |
 | Closed tickets, average resolution time (run) | **closing** date |
 | Creations per day (run) | **creation** date, attached to a single day |
 
-Bounds are **half-open**: `[Monday 00:00, next Monday 00:00[`. A ticket completed on
-Monday at exactly 00:00 belongs to the week that **starts**, never the one that ends.
+Lead Time is summarized over the full observed period and by the latest closure; it is
+not a weekly-bucketed display metric. Bounds are **half-open** for weekly indicators:
+`[Monday 00:00, next Monday 00:00[`. A ticket completed on Monday at exactly 00:00
+belongs to the week that **starts**, never the one that ends.
 Weeks are contiguous: no gap, no overlap. Day splits and configurable windows are
 computed in **calendar days**, not 24-hour slices: weeks with a daylight-saving time
 change (167 h or 169 h) therefore cause neither double counting nor a lost hour.
@@ -203,9 +227,11 @@ change (167 h or 169 h) therefore cause neither double counting nor a lost hour.
 Three metrics are **deliberately not** exclusive, because they measure a **stock** or
 **transitions**, not a ticket flow:
 
-- **Committed throughput** — a snapshot of the board at the Monday window. A ticket
-  that stays on the board for three weeks is counted in all three weeks: that's the
-  question being asked ("how many tickets were committed this Monday?").
+- **Committed throughput** — a snapshot of eligible Waiting / Work in progress tickets
+  during the configured weekly window; Workflow end and Backlog are excluded. A ticket
+  remaining in an eligible status for three weeks is counted in all three. A ticket
+  created after the window is excluded; its JIRA status history is replayed only within
+  the issue's actual lifetime and the half-open window.
 - **Open tickets (top card, run)** — stock of unresolved tickets at the selected
   cut-off, compared with the reconstructed stock at the previous loaded cut-off.
 - **Additions to board / moves back to backlog** — these count *transitions*. A ticket
@@ -390,11 +416,12 @@ the tables, as are ticket keys and links. Extension pages also run under an expl
 `script-src 'self'` policy, so no inline or remote script can execute.
 
 **Exports.** The settings export excludes the API token unless you tick the box. The
-image export never contains the JIRA URL, e-mail or token. By default, ticket lists
-remain collapsed, so the image contains the metrics, charts and list headings/counts
-but not ticket-level rows. The separate *Include ticket lists* checkbox deliberately
-opens every list for the capture; use it only when all recipients may see those ticket
-keys, summaries, assignees, statuses and dates. `.gitignore` blocks settings exports
+image and Markdown exports never contain the JIRA URL, e-mail or token. By default,
+ticket lists remain collapsed in image captures and the Markdown **Summary** level
+contains no ticket-level rows. The image *Include ticket lists* checkbox and Markdown
+**Analysis-ready** level are explicit opt-ins; use them only when all recipients may
+see those ticket keys, summaries, labels, assignees, statuses and dates. Markdown
+exports never contain full JIRA descriptions. `.gitignore` blocks settings exports
 from being committed by accident.
 
 **Recommended practice.** Use a token dedicated to this extension with an expiry date,
@@ -411,26 +438,37 @@ When reporting a bug, never paste your token.
    - API token: the one obtained in the **"Getting a JIRA Cloud API token"** section
      above (<https://id.atlassian.com/manage-profile/security/api-tokens>)
    - Click **Test connection**.
-3. **Metric settings**: aggregation (median/average), stability threshold, **JIRA story
-   points field** (optional, empty = auto-detect), and **Build mode counting windows**
+3. **Metric settings**: weekly Cycle Time aggregation (median/average), stability
+   threshold, **JIRA story points field** (optional, empty = auto-detect), and **Build mode counting windows**
    ("committed" window and "additions / removals" window: day + hours).
-4. **Teams / Projects**: for each of your teams, enter the name, the JIRA project key,
-   and the **exact statuses** of your workflow (comma-separated, case-insensitive):
+4. **Teams / Projects**: for each team, enter its name and JIRA project key. Project
+   issue types, workflow-category statuses and status-time chart statuses use JIRA-backed
+   checkboxes; Lead/Cycle start statuses are dropdowns populated from the workflows:
    - **Kanban type**: **Build** or **Run**;
-   - **Issue types counted** (both modes): leave empty to count every type, or click
-     **"Load types from JIRA"** to tick the real issue types of the project. Picking
-     them from that list removes any typo, casing or language problem; the text field
-     remains editable as a fallback when JIRA is unreachable.
-   - In **Build** mode: "In progress" (start of cycle time) and "Done" (delivered
-     throughput / lead / cycle); "Board statuses" (committed throughput / additions to
-     board) and "Backlog" (moves back to backlog). Board / Backlog statuses are
-     optional: without them, committed throughput and flow signals are not shown.
-     Check the box **"Track story points for this team"** to enable the card, chart,
-     and story points column.
-   - In **Run** mode: the **labels** identifying run tickets, the **"highest"
-     priority/priorities** (e.g. `Highest, Blocker`), the **closing statuses** (e.g.
-     `Done, Closed`) to exclude closed tickets from the stats, and the **run "Backlog"
-     statuses** (unplanned open tickets).
+   - **Issue types counted** (both modes): select one or more issue types to restrict the
+     team scope, or select **All project issue types**. Choices load automatically when
+     the project key is entered or changed.
+   - **Additional JQL** filters the team's shared metric queries. A trailing top-level
+     `ORDER BY` is accepted but ignored; Kanban Flow applies deterministic ordering.
+   - **Workflow status setup** (shared by Build and Run): select statuses for Backlog
+     (outside the board), Waiting, Work in progress, and Workflow end. Status choices
+     come from the team's project and selected issue types. A status assigned to one
+     category is disabled in the other categories. The board set is derived from Waiting,
+     Work in progress, and Workflow end. In Build, Committed throughput counts only
+     Waiting and Work in progress; board-flow additions use the broader board set. Run
+     uses Workflow end for closures and Backlog to separate
+     unplanned open tickets. Build closure dates use JIRA's green Done category when
+     available. These categories do not determine Lead Time or Cycle Time.
+   - **Kanban flow statuses**: select statuses for the Build and Run status-time charts
+     separately. Their chart order follows the selection order; uncheck and recheck a
+     status to move it to the end. Board statuses retain a distinct visual treatment.
+   - In **Build** mode, choose issue types independently for Lead Time and Cycle Time;
+     choose each start status from its dropdown of statuses common to those types. If no
+     Cycle start status is selected, Cycle Time starts at issue creation.
+     Check **"Track story points for this team"** to enable the card, chart, and story
+     points column.
+   - In **Run** mode, configure the **labels** identifying run tickets and the
+     **"highest" priorities** (e.g. `Highest, Blocker`).
 5. **Save**, then go back to the dashboard and choose a team.
 6. In the relevant Build or Run **Analysis period** section, enter the shared **Start
    date** if you use **Since start date**, choose the period, and click **Apply**. The
@@ -448,7 +486,9 @@ When reporting a bug, never paste your token.
   + `/rest/api/3/issue/{key}/changelog` as a fallback if the changelog is truncated,
   `GET /rest/api/3/priority` (site priority order), `GET /rest/api/3/field` (story
   points field detection), `GET /rest/api/3/issue/{key}/comment` (first comment,
-  Run mode) and `GET /rest/api/3/project/{key}` (issue type list, settings page).
+  Run mode), `GET /rest/api/3/project/{key}` (issue types) and
+  `GET /rest/api/3/project/{key}/statuses` (workflow groups for the team's settings).
+  Choice requests are triggered automatically by relevant settings interactions and use
   **Basic** authentication (email + API token).
 - Cross-origin requests to `*.atlassian.net` work thanks to the extension's
   `host_permissions` (a clean CORS workaround, impossible for a plain web page).
@@ -480,6 +520,7 @@ jira-kanban-dashboard/
 │   ├── charts.js          # SVG charts
 │   ├── update.js          # latest GitHub release check (cached, no credentials)
 │   ├── export-image.js    # captures the page as PNG/JPG (inlines SVG styles)
+│   ├── export-markdown.js # local Summary / Analysis-ready Markdown generation
 │   └── html2canvas.min.js # html2canvas 1.4.1 (MIT), vendored — local rasterization
 ├── icons/
 ├── tools/

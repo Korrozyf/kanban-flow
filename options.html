@@ -43,7 +43,7 @@
         <h2>2. Metric settings</h2>
         <div class="grid3">
           <div class="field">
-            <label for="aggregate">Lead/cycle time aggregation</label>
+            <label for="aggregate">Cycle Time weekly aggregation</label>
             <select id="aggregate">
               <option value="median">Median (recommended)</option>
               <option value="average">Average</option>
@@ -52,7 +52,7 @@
           <div class="field">
             <label for="threshold">"Stable" threshold (%)</label>
             <input id="threshold" type="number" min="0" max="100" value="10" />
-            <small>Variation below which the trend is "stable".</small>
+            <small>Variation at or below which the trend is "stable".</small>
           </div>
           <div class="field">
             <label for="storyPointsField">JIRA story points field (optional)</label>
@@ -74,20 +74,20 @@
           <div class="field">
             <label for="engageDay">Committed — day</label>
             <select id="engageDay"></select>
-            <small class="hint">Tickets present on the board during this window.</small>
+            <small class="hint">Tickets in Waiting or Work in progress during this window; Workflow end is excluded.</small>
           </div>
           <div class="field">
-            <label for="engageStart">Committed — start</label>
+            <label for="engageStart">Start time</label>
             <input id="engageStart" type="time" value="00:00" />
           </div>
           <div class="field">
-            <label for="engageEnd">Committed — end</label>
+            <label for="engageEnd">End time</label>
             <input id="engageEnd" type="time" value="12:00" />
           </div>
         </div>
         <div class="grid4">
           <div class="field">
-            <label for="churnStartDay">Additions / removals — start day</label>
+            <label for="churnStartDay">Additions / removals — day</label>
             <select id="churnStartDay"></select>
           </div>
           <div class="field">
@@ -111,9 +111,9 @@
           <button id="addProjectBtn" class="btn">+ Add a team</button>
         </div>
         <p class="muted">
-          For each team, fill in the JIRA project key and the exact statuses of
-          your workflows. Statuses are comma-separated and must match
-          exactly (case-insensitive) the names in JIRA.
+          For each team, enter the JIRA project key. Issue types, workflow categories, and
+          status-time chart statuses use choices retrieved for that project and selected
+          issue types; Lead/Cycle start statuses are dropdowns populated from their own type selections.
         </p>
         <div id="projectList"></div>
       </section>
@@ -184,7 +184,7 @@
 
       <div class="save-bar">
         <button id="saveBtn" class="btn btn-primary">💾 Save</button>
-        <span id="saveResult" class="test-result" role="status" aria-live="polite" aria-atomic="true"></span>
+        <div id="saveResult" class="test-result" role="status" aria-live="polite" aria-atomic="false"></div>
         <a id="openDashboard" href="dashboard.html" class="btn btn-ghost">Open dashboard →</a>
       </div>
     </div>
@@ -192,108 +192,177 @@
     <template id="projectTemplate">
       <div class="project" data-id="" data-mode="build">
         <div class="project-head">
-          <input class="p-name" type="text" aria-label="Team name" placeholder="Team name (e.g. Team Alpha)" />
+          <div class="field project-name-field">
+            <label>Team name</label>
+            <input class="p-name" type="text" placeholder="e.g. Team Alpha" />
+          </div>
           <button type="button" class="btn btn-danger p-remove" aria-label="Remove team">✕</button>
         </div>
-        <div class="grid2">
-          <div class="field">
-            <label>JIRA project key</label>
-            <input class="p-key" type="text" placeholder="e.g. ALPHA" />
-          </div>
-          <div class="field">
-            <label>Kanban type</label>
-            <select class="p-mode">
-              <option value="build">Build (flow: throughput, lead/cycle time)</option>
-              <option value="run">Run (support: open, variance, highest priority)</option>
-            </select>
-          </div>
-        </div>
-        <div class="field">
-          <label>Additional JQL (optional)</label>
-          <input class="p-jql" type="text" placeholder='e.g. labels != obsolete' />
-        </div>
-
-        <!-- Issue types: shared by both modes -->
-        <div class="field">
-          <label>Issue types counted</label>
-          <div class="row">
-            <button type="button" class="btn p-types-load">Load types from JIRA</button>
-            <span class="test-result p-types-msg" role="status" aria-live="polite" aria-atomic="true"></span>
-          </div>
-          <div class="types-box p-types-box hidden"></div>
-          <input
-            class="p-types"
-            type="text"
-            placeholder="e.g. Story, Bug (empty = all types)"
-          />
-          <small class="hint">
-            Leave empty to count every issue type. Click "Load types from JIRA"
-            to tick the real types of this project: no typo and no casing
-            problem. The text field stays editable as a fallback and is
-            comma-separated.
-          </small>
-        </div>
-
-        <!-- Shared fields / BUILD mode -->
-        <div class="mode-build">
+        <section class="project-section project-scope" aria-label="Project and ticket scope">
+          <h3>Project and ticket scope</h3>
           <div class="grid2">
             <div class="field">
-              <label>"In progress" statuses (start of cycle time)</label>
-              <input class="p-wip" type="text" placeholder="e.g. In Progress, In Review" />
+              <label>JIRA project key</label>
+              <input class="p-key" type="text" placeholder="e.g. ALPHA" />
             </div>
             <div class="field">
-              <label>"Done" statuses (end = throughput/lead/cycle)</label>
-              <input class="p-done" type="text" placeholder="e.g. Done, Closed" />
-            </div>
-          </div>
-          <div class="grid2">
-            <div class="field">
-              <label>Board statuses (work the team has committed to)</label>
-              <input class="p-ready" type="text" placeholder="e.g. Ready, To Do" />
-              <small class="hint">Used for committed throughput and additions to the board, on the windows defined in section 2.</small>
-            </div>
-            <div class="field">
-              <label>"Backlog" statuses (not yet taken on by the team)</label>
-              <input class="p-backlog" type="text" placeholder="e.g. Backlog, To Do" />
-              <small class="hint">Used for moves back to backlog, on the "additions / removals" window defined in section 2. Also used in Run mode.</small>
+              <label>Kanban type</label>
+              <select class="p-mode">
+                <option value="build">Build (flow: throughput, lead/cycle time)</option>
+                <option value="run">Run (support: open/closed/created, average resolution, priority lists)</option>
+              </select>
             </div>
           </div>
           <div class="field">
-            <label class="inline">
-              <input class="p-storypoints" type="checkbox" />
-              Track story points for this team
-            </label>
-            <small class="hint">Adds a "delivered story points" metric, a weekly chart, and a column in the completed tickets list.</small>
+            <label>Additional JQL (optional)</label>
+            <input class="p-jql" type="text" placeholder='e.g. labels != obsolete' />
+            <small class="hint">Use this to filter the team's metric queries. A trailing top-level ORDER BY is accepted but ignored; Kanban Flow applies its own deterministic ordering.</small>
           </div>
-        </div>
+
+          <!-- Issue types: shared by both modes -->
+          <div class="field">
+            <label>Issue types counted</label>
+            <input class="p-types" type="hidden" value="" />
+            <div class="types-box p-types-box hidden" role="group"></div>
+            <span class="test-result choice-status p-types-msg" role="status" aria-live="polite" aria-atomic="true"></span>
+            <small class="hint">Select project issue types to limit the team scope. No checked types means all issue types available in this project.</small>
+          </div>
+        </section>
+
+        <!-- Workflow categories are shared by Build and Run. -->
+        <section class="project-section project-workflow" aria-label="Workflow status setup">
+          <h3>Workflow status setup</h3>
+          <p class="muted">These four status groups are shared by Build and Run. Board statuses are derived from Waiting, Work in progress, and Workflow end; Backlog stays outside the board. Build Committed throughput counts only Waiting and Work in progress, not Workflow end. Choices are retrieved for this JIRA project and selected issue types. A status assigned to one category is disabled in the other categories.</p>
+          <div class="grid2">
+            <div class="field">
+              <label>Backlog statuses (outside the board)</label>
+              <input class="p-backlog" type="hidden" value="" />
+              <small class="hint">Build uses these for moves back to backlog; Run lists open tickets in these statuses as unplanned.</small>
+              <div class="types-box status-box p-backlog-box hidden" role="group"></div>
+            </div>
+            <div class="field">
+              <label>Waiting statuses (on the board; no active team work)</label>
+              <input class="p-waiting" type="hidden" value="" />
+              <small class="hint">Eligible for Build Committed throughput; also included in the board-flow signals.</small>
+              <div class="types-box status-box p-waiting-box hidden" role="group"></div>
+            </div>
+            <div class="field">
+              <label>Work in progress statuses (on the board; active team work)</label>
+              <input class="p-wip" type="hidden" value="" />
+              <small class="hint">Eligible for Build Committed throughput; also included in the board-flow signals.</small>
+              <div class="types-box status-box p-wip-box hidden" role="group"></div>
+            </div>
+            <div class="field">
+              <label>Workflow end statuses (on the board; work is complete)</label>
+              <input class="p-done" type="hidden" value="" />
+              <small class="hint">Run uses these to identify closed tickets. Build uses JIRA’s Done category when available, with these names as a compatibility fallback.</small>
+              <div class="types-box status-box p-done-box hidden" role="group"></div>
+            </div>
+          </div>
+          <span class="test-result choice-status p-workflow-status-msg" role="status" aria-live="polite" aria-atomic="true"></span>
+          <small class="hint">Status-time charts have separate selections below. These workflow categories define only backlog, board, and closure classification.</small>
+        </section>
+
+        <!-- BUILD mode -->
+        <section class="project-section project-build mode-build" aria-label="Build settings">
+          <h3>Build settings</h3>
+          <section class="project-subsection project-duration-filters" aria-label="Lead Time and Cycle Time settings for this team">
+            <h4>Lead Time and Cycle Time</h4>
+            <p class="muted">These settings apply only to this Build team. Issue types and their project workflows load automatically from the configured JIRA project when you interact with these fields. The start status is included; every status in JIRA's green Done category is an automatic exclusive end boundary.</p>
+            <div class="grid2 duration-filters">
+              <section class="duration-filter">
+                <h5>Lead Time</h5>
+                <div class="field">
+                  <label>Issue types included</label>
+                  <input class="p-lead-types" type="hidden" value="" />
+                  <div class="types-box p-lead-types-box hidden" role="group"></div>
+                  <small class="hint">Select issue types to limit Lead Time; no checked types means all project issue types.</small>
+                </div>
+                <div class="field">
+                  <label>Start status (included)</label>
+                  <select class="p-lead-start-status">
+                    <option value="">Choices load automatically</option>
+                  </select>
+                  <small class="hint">Only statuses common to all selected issue types are offered. Focus the selector to load choices automatically. Time before this status is excluded; Done-category statuses are never offered as a start.</small>
+                  <span class="test-result choice-status p-lead-statuses-msg" role="status" aria-live="polite" aria-atomic="true"></span>
+                </div>
+                <div class="field">
+                  <label class="inline">
+                    <input class="p-lead-fallback" type="checkbox" checked />
+                    Include common non-closing status time when start is not reached
+                  </label>
+                  <small class="hint">When enabled, a closed ticket that never reaches the Lead start status uses its time in all common non-Done statuses from creation to the final Done entry.</small>
+                </div>
+              </section>
+              <section class="duration-filter">
+                <h5>Cycle Time</h5>
+                <div class="field">
+                  <label>Issue types included</label>
+                  <input class="p-cycle-types" type="hidden" value="" />
+                  <div class="types-box p-cycle-types-box hidden" role="group"></div>
+                  <small class="hint">Select issue types to limit Cycle Time; no checked types means all project issue types.</small>
+                </div>
+                <div class="field">
+                  <label>Start status (included)</label>
+                  <select class="p-cycle-start-status">
+                    <option value="">Choices load automatically</option>
+                  </select>
+                  <small class="hint">This can differ from Lead Time. Only statuses common to all selected types are offered; focus the selector to load choices automatically. Time before this status is excluded. If left blank, Cycle Time starts at issue creation; it never inherits a status from Workflow status setup.</small>
+                  <span class="test-result choice-status p-cycle-statuses-msg" role="status" aria-live="polite" aria-atomic="true"></span>
+                </div>
+              </section>
+            </div>
+            <p class="hint duration-legacy-note">Lead fallback is enabled by default for new and migrated Build teams; uncheck it to keep tickets that skip the Lead start status unavailable. If the selected types have no common non-closing status, Save is blocked. Cycle Time with no selected start status runs from issue creation and is independent of Workflow status setup.</p>
+          </section>
+          <section class="project-subsection project-status-time-build">
+            <h4>Status-time chart</h4>
+            <div class="field">
+              <label>Kanban flow statuses (ordered)</label>
+              <input class="p-status-flow-build" type="hidden" value="" />
+              <div class="types-box status-box p-status-flow-build-box hidden" role="group"></div>
+              <small class="hint">Select statuses for the Build status-time chart. Their order follows the order selected; uncheck and recheck a status to move it to the end.</small>
+            </div>
+          </section>
+          <section class="project-subsection project-story-points">
+            <h4>Story points</h4>
+            <div class="field">
+              <label class="inline">
+                <input class="p-storypoints" type="checkbox" />
+                Track story points for this team
+              </label>
+              <small class="hint">Adds a "delivered story points" metric, a weekly chart, and a column in the completed tickets list.</small>
+            </div>
+          </section>
+        </section>
 
         <!-- RUN mode fields -->
-        <div class="mode-run">
-          <div class="grid2">
-            <div class="field">
-              <label>Run ticket labels</label>
-              <input class="p-runlabels" type="text" placeholder="e.g. run, support, incident" />
-              <small>Comma-separated. Tickets carrying any of these labels are analysed.</small>
+        <section class="project-section project-run mode-run" aria-label="Run settings">
+          <h3>Run settings</h3>
+          <section class="project-subsection">
+            <h4>Ticket labels and priorities</h4>
+            <div class="grid2">
+              <div class="field">
+                <label>Run ticket labels</label>
+                <input class="p-runlabels" type="text" placeholder="e.g. run, support, incident" />
+                <small>Comma-separated. Tickets carrying any of these labels are analysed.</small>
+              </div>
+              <div class="field">
+                <label>"Highest" priorities</label>
+                <input class="p-maxprio" type="text" placeholder="e.g. Highest, Blocker" />
+                <small>Exact values of the JIRA Priority field (case-insensitive).</small>
+              </div>
             </div>
+          </section>
+          <section class="project-subsection project-status-time-run">
+            <h4>Status-time chart</h4>
             <div class="field">
-              <label>"Highest" priorities</label>
-              <input class="p-maxprio" type="text" placeholder="e.g. Highest, Blocker" />
-              <small>Exact values of the JIRA Priority field (case-insensitive).</small>
+              <label>Kanban flow statuses (ordered)</label>
+              <input class="p-status-flow-run" type="hidden" value="" />
+              <div class="types-box status-box p-status-flow-run-box hidden" role="group"></div>
+              <small class="hint">Select statuses for the Run status-time chart. Their order follows the order selected; uncheck and recheck a status to move it to the end.</small>
             </div>
-          </div>
-          <div class="grid2">
-            <div class="field">
-              <label>Closing statuses (tickets excluded from stats)</label>
-              <input class="p-done-run" type="text" placeholder="e.g. Done, Closed, Resolved" />
-              <small>A ticket in one of these statuses (or resolved) is no longer counted in the run metrics.</small>
-            </div>
-            <div class="field">
-              <label>Run "Backlog" statuses (unplanned tickets)</label>
-              <input class="p-backlog-run" type="text" placeholder="e.g. Backlog, To Do, New" />
-              <small>Any other status is considered "on the board" (to be worked on). Open backlog tickets are listed separately.</small>
-            </div>
-          </div>
-        </div>
+          </section>
+        </section>
       </div>
     </template>
 

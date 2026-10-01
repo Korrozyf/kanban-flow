@@ -31,6 +31,15 @@
         </label>
         <button id="exportBtn" class="btn" disabled
                 title="Save the full metrics page as an image">🖼 Export image</button>
+        <label for="markdownLevel" class="sr-label">Markdown export level</label>
+        <select id="markdownLevel" aria-label="Markdown export level" title="Summary excludes ticket lists">
+          <option value="summary">Markdown: Summary</option>
+          <option value="analysis">Markdown: Analysis-ready (ticket lists)</option>
+        </select>
+        <button id="markdownDownloadBtn" class="btn" disabled
+                title="Download the selected mode as a Markdown file">⇩ Download Markdown</button>
+        <button id="markdownCopyBtn" class="btn" disabled
+                title="Copy the selected mode as Markdown">⧉ Copy Markdown</button>
         <button id="optionsBtn" class="btn btn-ghost" title="Settings">⚙ Settings<span
             id="updateDot" class="update-dot hidden" aria-hidden="true"></span><span
             id="updateDotLabel" class="sr-label hidden">Update available</span></button>
@@ -60,14 +69,14 @@
           <button type="button" id="buildPeriodApply" class="btn">Apply</button>
           <label for="buildWeekSelect">Week's KPIs</label>
           <select id="buildWeekSelect"></select>
-          <span id="buildPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Since start date = up to the first 52 weeks from the shared start date.</span>
+          <span id="buildPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Since start date = up to the first 52 weeks from the shared start date. </span>
         </fieldset>
         <p id="buildPeriodWarning" class="comparison-note hidden" role="status" aria-live="polite"></p>
         <p class="legend">
           <span class="legend-item"><span class="swatch swatch-complete"></span> Completed weeks (blue / purple)</span>
           <span class="legend-item legend-current"><span class="swatch swatch-current"></span> Current week — incomplete (yellow / amber in charts)</span>
         </p>
-        <p class="cards-caption">Key figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> — the trend compares it to the previous week.</p>
+        <p class="cards-caption">Weekly figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> compare with the previous week; Lead Time is the average of eligible tickets closed across the observed period.</p>
         <div class="cards">
           <div class="card card-current">
             <div class="card-head">
@@ -93,13 +102,12 @@
             <div class="metric" id="spValue">–</div>
             <div class="metric-note" id="spNote"></div>
           </div>
-          <div class="card card-current">
+          <div class="card">
             <div class="card-head">
-              <h3>Lead time <small id="leadAggLabel">(median)</small> <span class="pill-current">current</span></h3>
-              <span id="leadTrend" class="trend"></span>
+              <h3>Average Epic Lead Time <small id="leadAggLabel">(observed period · days)</small></h3>
             </div>
             <div class="metric" id="leadValue">–</div>
-            <div class="metric-note">days — <span class="week-context-plain">current week</span></div>
+            <div class="metric-note" id="leadFilterNote">Average Lead Time of matching Epics closed during the observed period.</div>
           </div>
           <div class="card card-current">
             <div class="card-head">
@@ -107,7 +115,7 @@
               <span id="cycleTrend" class="trend"></span>
             </div>
             <div class="metric" id="cycleValue">–</div>
-            <div class="metric-note">days — <span class="week-context-plain">current week</span></div>
+            <div class="metric-note" id="cycleFilterNote">days — <span class="week-context-plain">current week</span></div>
           </div>
         </div>
 
@@ -163,15 +171,45 @@
             </div>
             <div id="spChart" class="chart-box"></div>
           </div>
-          <div class="panel chart-panel">
-            <h3>Lead time per week <small>(days)</small></h3>
-            <div id="leadChart" class="chart-box"></div>
-          </div>
-          <div class="panel chart-panel">
+          <section class="panel chart-panel chart-panel-full lead-overview-panel" id="leadOverviewPanel" aria-labelledby="leadOverviewHeading">
+            <h3 id="leadOverviewHeading">Epic Lead Time overview <small>(project Epics; closed in the observed period or currently open)</small></h3>
+            <div class="lead-overview-grid">
+              <article class="lead-overview-item" aria-labelledby="leadLatestHeading">
+                <h4 id="leadLatestHeading">Latest Epic closed in the observed period <small>(days)</small></h4>
+                <div class="lead-overview-value" id="leadLatestValue">–</div>
+                <p class="metric-note" id="leadLatestNote">No matching Epic closed during the observed period.</p>
+              </article>
+              <article class="lead-overview-item" aria-labelledby="leadGrowingHeading">
+                <h4 id="leadGrowingHeading">Growing Lead Time — open Epics <small>(days)</small></h4>
+                <div class="lead-overview-value" id="leadGrowingValue">–</div>
+                <p class="metric-note" id="leadGrowingNote">Average accumulated Lead Time for matching open Epics not in a Done status.</p>
+              </article>
+            </div>
+          </section>
+          <div class="panel chart-panel chart-panel-full">
             <h3>Cycle time per week <small>(days)</small></h3>
             <div id="cycleChart" class="chart-box"></div>
           </div>
         </div>
+
+        <section class="panel status-time-section hidden" id="buildStatusTimePanel" aria-labelledby="buildStatusTimeHeading">
+          <h2 id="buildStatusTimeHeading">Time spent by status</h2>
+          <p id="buildStatusTimeMessage" class="metric-note"></p>
+          <div class="status-time-content">
+            <p class="status-time-legend">
+              <span><i class="status-time-key status-time-key-observed" aria-hidden="true"></i> Observed analysis period</span>
+              <span><i class="status-time-key status-time-key-selected" aria-hidden="true"></i> Selected week</span>
+              <span><i class="status-time-key status-time-key-board" aria-hidden="true"></i> Board-entry status — grey category marker and label</span>
+              <span><i class="status-time-key status-time-key-alert" aria-hidden="true"></i> Alert — red dashed outline and ⚠ label on each bar averaging more than 2 days</span>
+            </p>
+            <div class="charts status-time-charts">
+              <div class="panel chart-panel chart-panel-full">
+                <h3>Average time by status <small>(observed period vs selected week, per ticket)</small></h3>
+                <div id="buildStatusTimeAverageChart" class="chart-box" data-chart-type="status-time"></div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <div class="panel">
           <details class="list-details">
@@ -199,7 +237,7 @@
               <span><i class="age-dot" style="background: var(--bad)"></i> more than 4 days</span>
             </p>
           </details>
-          <p class="jql-note">JQL used: <code id="jqlText"></code></p>
+          <p class="jql-note">JQL used (weekly metrics and Epic Lead Time): <code id="jqlText"></code></p>
         </div>
         </div><!-- /#buildView -->
 
@@ -213,7 +251,7 @@
             <button type="button" id="runPeriodApply" class="btn">Apply</button>
             <label for="runWeekSelect">Week's KPIs</label>
             <select id="runWeekSelect"></select>
-            <span id="runPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Since start date = up to the first 52 weeks from the shared start date.</span>
+            <span id="runPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Since start date = up to the first 52 weeks from the shared start date. </span>
           </fieldset>
           <p id="runPeriodWarning" class="comparison-note hidden" role="status" aria-live="polite"></p>
           <p class="cards-caption">Kanban <strong>run</strong> — tickets identified by their labels. Weeks from Monday 00:00 to Sunday 23:59. Key figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> — the trend compares it to the previous week.</p>
@@ -248,7 +286,7 @@
                 <span id="runResolTrend" class="trend"></span>
               </div>
               <div class="metric" id="runResolValue">–</div>
-              <div class="metric-note" id="runResolNote">average creation → closing for tickets closed this week</div>
+              <div class="metric-note" id="runResolNote">average creation → closing for tickets closed in this week</div>
               <p class="age-legend">
                 <span><i class="age-dot" style="background: var(--good)"></i> ≤ 1 day</span>
                 <span><i class="age-dot" style="background: var(--current-2)"></i> 1 to 2 days</span>
@@ -284,10 +322,29 @@
                   <span class="legend-item"><span class="swatch swatch-done-current"></span> <span class="week-context-cap">Current week</span></span>
                 </p>
               </div>
-              <div id="runDailyChart" class="chart-box"></div>
+              <div id="runDailyChart" class="chart-box" data-chart-type="daily"></div>
               <p class="metric-note" id="runDailyNote"></p>
             </div>
           </div>
+
+          <section class="panel status-time-section hidden" id="runStatusTimePanel" aria-labelledby="runStatusTimeHeading">
+            <h2 id="runStatusTimeHeading">Time spent by status</h2>
+            <p id="runStatusTimeMessage" class="metric-note"></p>
+            <div class="status-time-content">
+              <p class="status-time-legend">
+                <span><i class="status-time-key status-time-key-observed" aria-hidden="true"></i> Observed analysis period</span>
+                <span><i class="status-time-key status-time-key-selected" aria-hidden="true"></i> Selected week</span>
+                <span><i class="status-time-key status-time-key-board" aria-hidden="true"></i> Board-entry status — grey category marker and label</span>
+                <span><i class="status-time-key status-time-key-alert" aria-hidden="true"></i> Alert — red dashed outline and ⚠ label on each bar averaging more than 2 days</span>
+              </p>
+              <div class="charts status-time-charts">
+                <div class="panel chart-panel chart-panel-full">
+                  <h3>Average time by status <small>(observed period vs selected week, per ticket)</small></h3>
+                  <div id="runStatusTimeAverageChart" class="chart-box" data-chart-type="status-time"></div>
+                </div>
+              </div>
+            </div>
+          </section>
 
           <div class="panel">
             <details class="list-details">
@@ -398,6 +455,7 @@
     <script src="lib/charts.js"></script>
     <script src="lib/html2canvas.min.js"></script>
     <script src="lib/export-image.js"></script>
+    <script src="lib/export-markdown.js"></script>
     <script src="dashboard.js"></script>
   </body>
 </html>

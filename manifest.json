@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Kanban Flow — Kanban facilitator dashboard (JIRA)",
-  "description": "Multi-team dashboard for Kanban facilitators: throughput, lead time, cycle time and weekly trends (Mon-Sun), straight from JIRA Cloud.",
-  "version": "1.31.0",
+  "name": "Kanban Flow \u2014 Kanban facilitator dashboard (JIRA)",
+  "description": "Kanban Flow dashboard for Kanban facilitators: Build and Run metrics, status-time analysis and local Markdown export.",
+  "version": "1.45.4",
   "permissions": [
     "storage"
   ],
@@ -17,7 +17,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Kanban Flow — open the dashboard"
+    "default_title": "Kanban Flow \u2014 open the dashboard"
   },
   "options_ui": {
     "page": "options.html",

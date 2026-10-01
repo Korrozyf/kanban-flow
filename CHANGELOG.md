@@ -1,10 +1,322 @@
 # Changelog — Kanban Flow
 
+## 1.45.4
+
+### Cumulative highlights since the last published release (v1.31.0)
+
+The detailed version-by-version entries below cover the unpublished local work from
+v1.32.0 through v1.45.4. Version 1.34.x was an experimental local build and is
+intentionally skipped.
+
+- Expanded Build and Run analysis with status-time insights, historical Run snapshots,
+  configurable analysis periods, and an Epic-specific Lead Time overview.
+- Added per-team Lead/Cycle Time types and start statuses, Lead Time fallback handling,
+  and shared JIRA-backed workflow settings across Build and Run.
+- Refined Committed throughput eligibility and time-window boundaries, and improved
+  JIRA history completeness checks and analysis performance.
+- Added privacy-conscious local Markdown and image exports, with controls over whether
+  ticket details are included; improved accessibility and settings guidance.
+- Updated Chrome/Edge and Firefox packaging, release automation, and documentation.
+
+### Ignore trailing Additional JQL ordering safely
+
+- Additional JQL now removes only a trailing, top-level `ORDER BY` before the extension
+  adds its own deterministic sort. Existing filters, Atlassian account IDs, quoted
+  literals, and nested expressions are preserved.
+- Clarified in Settings that a trailing `ORDER BY` is accepted but ignored.
+
+## 1.45.3
+
+### Use dedicated Epic queries for the Build Lead Time overview
+
+- Added separate closed-Epic and open-Epic JQL queries scoped to the configured JIRA
+  project and the Epic issue type. These queries intentionally bypass project-level
+  **Additional JQL** and **Issue types counted**, preventing those shared filters from
+  removing all Epics from the Lead Time overview.
+- The team's separate **Lead Time issue types** selection and Lead duration settings are
+  still applied locally. Epic-query results feed only the Lead Time overview; they do not
+  affect delivered or committed throughput, story points, Cycle Time, or the completed-
+  ticket table.
+- Updated dashboard wording, JQL transparency, Markdown export, README, and metric
+  reference to describe the Epic-only overview and its query scope.
+
+## 1.45.2
+
+### Prevent hidden ticket-list content from leaking into image exports
+
+- Prepare the export-only DOM clone explicitly: ticket lists are opened there when
+  **Include ticket lists** is selected, and their content is removed from the clone
+  otherwise. This avoids partial rendering of closed native `<details>` panels by
+  html2canvas and keeps the live dashboard's list state unchanged.
+- Let html2canvas measure the prepared clone's height so included tables fit and
+  excluded lists do not leave excess blank space. No metrics or settings changed.
+
+## 1.45.1
+
+### Settings accuracy and code-audit improvements
+
+- Updated the Run mode description to match the current open/closed/created metrics and
+  average resolution-time indicator. Clarified that Lead/Cycle start statuses are
+  dropdowns, while JIRA-backed issue-type, workflow, and status-time choices use checkboxes.
+- Corrected the stability-threshold explanation and preserved a configured 0% value when
+  saving Settings; values are constrained to the documented 0–100% range.
+- Updated the README, installation guide, and metrics reference to match the controls.
+- Build date reconstruction now uses the fetched authoritative changelog when available,
+  and reuses its parsed status events rather than sorting the same history twice.
+- Rejected incomplete JIRA search/changelog pagination instead of silently treating
+  truncated results as complete. Run snapshot analysis precomputes field-change timelines,
+  status-time aggregation counts segments in one pass, and per-issue changelog/comment
+  lookups use a small bounded concurrency of three.
+- No metric definitions or configuration keys changed.
+
+## 1.45.0
+
+### Restrict Committed throughput to Waiting and Work in progress
+
+- Corrected the committed snapshot query to use only the configured **Waiting** and
+  **Work in progress** statuses. **Workflow end** remains part of the broader board set
+  for other purposes but can no longer inflate Committed throughput.
+- Added a local selected-issue-type check as a safeguard alongside the JIRA query filters
+  for project key, **Issue types counted**, and **Additional JQL**.
+- Fixed changelog selection so a fetched complete/paginated history takes precedence over
+  a truncated changelog embedded in the search response; committed windows now replay the
+  authoritative event sequence.
+- Clarified the eligible statuses and query scope in Settings, the dashboard, Markdown
+  export, README, and metric reference. Configurable day/start/end bounds remain
+  inclusive-start and exclusive-end.
+
+## 1.44.0
+
+### JIRA-backed checkbox settings and committed-throughput correction
+
+- Replaced free-text issue-type and status inputs with checkboxes populated from each
+  team's JIRA project and selected issue types. Added an explicit **All project issue
+  types** checkbox; the hidden configuration arrays and empty-means-all semantics remain
+  compatible. Ordered status-time chart choices follow selection order.
+- Made workflow-category assignments mutually exclusive: once a status belongs to
+  Backlog, Waiting, Work in progress, or Workflow end, it is disabled in the other groups.
+  Lead/Cycle issue-type and start-status controls remain independent of workflow categories;
+  without an explicit Cycle start status, Cycle Time now begins at issue creation rather
+  than inheriting Work in progress statuses.
+- Renamed the counting-window labels to **Start time**, **End time**, and
+  **Additions / removals — day**.
+- Fixed committed-throughput snapshots to exclude tickets before their creation date,
+  honor the configured half-open `[start, end)` window, and avoid asserting historical
+  status when the JIRA changelog is incomplete. The dashboard/export report excluded
+  unverifiable candidates; carryover tickets may still count in each week they remain on
+  the board during its configured window.
+- Updated the settings guide, README and metric reference. No JIRA metric scopes or
+  configuration keys were renamed.
+
+## 1.43.0
+
+### Shared workflow categories for Build and Run
+
+- Added one shared per-team workflow setup for both modes: Backlog, Waiting, Work in
+  progress, and Workflow end. Removed the separate Run-only closing/backlog fields and
+  the old Build-only board/WIP configuration.
+- Derived board statuses from the union of Waiting, Work in progress, and Workflow end.
+  Build committed-throughput and board-flow signals now use this shared board set; Run
+  closure and backlog classification use the same shared workflow groups.
+- Added automatic JIRA status choices for the shared categories and ordered status-time
+  lists, scoped to selected issue types, while keeping editable text inputs as a fallback.
+- Migrated existing Board statuses into Waiting, except names already configured as Work
+  in progress or Done. Export/import format 4 stores the new category and remains
+  compatible with older exports.
+- Updated README and metric reference. No Lead/Cycle or Run metric formulas changed.
+
+## 1.42.0
+
+### Automatic JIRA choices and clearer Settings validation
+
+- Removed the manual **Load types from JIRA** and **Load common statuses from JIRA**
+  buttons. Issue types now load after a project key is entered or an issue-type field is
+  used; workflow groups load automatically when Lead/Cycle choices are needed.
+- Lead and Cycle status lists refresh automatically after their selected issue types
+  change and continue to offer only statuses common to all selected types. Choices are
+  cached per team and connection and refreshed when the project key or connection changes.
+- Saving configured Lead/Cycle settings now performs any missing JIRA retrieval itself,
+  so users no longer need to load types or statuses manually before saving.
+- Replaced the single-line Save error with a prominent accessible error panel, one issue
+  per line. Automatic lookup errors now explain that the JIRA connection, project key
+  and project permissions should be checked.
+- Updated the README, installation guide and metrics reference for the automatic loading
+  behavior. No metric formulas or configuration keys changed.
+
+## 1.41.0
+
+### Period-based Lead Time overview
+
+- Replaced the weekly Lead Time chart and week-scoped Lead Time card with three
+  period-based indicators: the latest matching ticket closed in the observed period,
+  the arithmetic mean Lead Time of matching tickets closed in that period, and the
+  growing arithmetic mean for matching tickets currently outside JIRA's Done category.
+- Repurposed the Lead Time KPI card to show the observed-period mean. The former chart
+  area now shows the latest closure and growing open-ticket mean alongside it, avoiding
+  a duplicate average display.
+- Added a separate JQL request for current open Lead Time tickets; it respects project
+  issue-type scope, Lead issue-type filters and Additional JQL, and does not alter
+  throughput or weekly closure counts.
+- Growing durations use the configured Lead start status, exclude all Done-category
+  intervals, and apply the existing common non-Done fallback from creation when enabled.
+  Incomplete histories remain unavailable and are excluded from averages.
+- Updated the local Markdown export, README and metric reference to distinguish the
+  observed-period Lead Time summary from weekly Cycle Time and trends.
+
+## 1.40.0
+
+### Thematic Settings sections for teams and projects
+
+- Grouped each team's settings into clearly separated sections: project and ticket scope,
+  shared board settings, Build settings, and Run settings.
+- Split Build and Run settings further by theme, including workflow status setup,
+  Lead/Cycle Time, story points, ticket labels and priorities.
+- Added visible section borders, accent markers, and dividers to improve scanning while
+  preserving the existing settings controls and saved configuration format.
+
+## 1.39.0
+
+### Lead Time fallback for tickets that skip the start status
+
+- Added a per-Build-team Lead Time setting, enabled by default, to handle tickets that
+  close without ever entering the configured Lead start status.
+- The fallback uses the common non-Done statuses loaded for all selected Lead issue types
+  and sums their reconstructed time from creation to the final (last) Done-category entry.
+- Cycle Time is unchanged and still requires its configured start status when explicitly
+  configured.
+- Dashboard details and Markdown exports identify values obtained through the Lead fallback;
+  incomplete histories remain unavailable rather than being reported as zero.
+- Existing configurations migrate with the fallback enabled by default; the setting can be
+  disabled explicitly in the Lead Time section.
+
+## 1.38.1
+
+### Settings team header layout
+
+- Added a visible **Team name** label matching the other Settings field labels.
+- Moved the team remove button to the top-right of each team settings box.
+
+## 1.38.0
+
+### Project-specific Lead Time and Cycle Time start boundaries
+
+- Replaced the ambiguous Lead/Cycle status-inclusion UI with independent start-status settings for every Build team.
+- The issue-type loader reads the types available on the team's configured JIRA project; separate status buttons read the project's issue-type-to-status groups.
+- Status choices are intersected across the selected issue types. Save is blocked when no common non-closing status exists, when choices have not been loaded, or when no valid common start status is selected.
+- Lead Time and Cycle Time can use different start statuses. The start transition is included; time before it is excluded; all JIRA green Done-category intervals are excluded until the closing boundary.
+- Tickets that never reach their configured start status are excluded from that metric, without a creation fallback. Incomplete histories remain explicitly unavailable.
+- Build analysis uses the project's Done status category as the authoritative closing configuration, with saved `doneStatuses` names retained as an offline compatibility fallback.
+- JIRA workflow groups are preserved instead of flattening statuses across issue types. Configuration exports use format 3; format-2 imports remain supported.
+
+## 1.37.0
+
+### Per-team Lead Time and Cycle Time filters
+
+- Moved Lead Time and Cycle Time issue-type and status filters into each Build team.
+- The JIRA choice loader now queries only that team's project, so the selectable types
+  and statuses match its configured project key instead of a cross-team union.
+- Migrated existing 1.36.0 global filters by copying them to every Build team, preserving
+  their effective scope. New settings backups use export format 2; older exports remain
+  importable and are migrated automatically.
+
+## 1.36.0
+
+### Configurable Lead Time and Cycle Time
+
+- Added independent Lead Time and Cycle Time filters for optional issue types and statuses.
+- Selected statuses now use actual time reconstructed from JIRA status transitions between ticket creation and closing; empty lists preserve the previous all-types/all-statuses calculations.
+- Added JIRA-assisted loading of available issue types and statuses across configured Build teams, with editable comma-separated fallback fields.
+- Made filtered scope and excluded/unavailable ticket values explicit in the Build dashboard and local Markdown export.
+
 Semantic versioning: `MAJOR.MINOR.PATCH`.
 
 - **MAJOR**: breaking compatibility change (existing config must be redone).
 - **MINOR**: new feature or change in calculation rule.
 - **PATCH**: bug fix, no rule or screen change.
+
+## 1.35.3
+
+### Status-time alert bars
+
+- Moved the red dashed threshold marker from the full status category to the exact
+  bar that exceeds two days.
+- Applied the marker independently to the blue observed-period bar and the purple
+  selected-week bar. The `⚠` status label appears when either displayed average is
+  strictly above two days, including for Board statuses.
+
+## 1.35.2
+
+### Status-time alert marker fix
+
+- Fixed the missing visual alert marker in the **Average time by status** chart.
+  A status whose observed-period average is strictly above two days now has both a
+  red dashed category outline and an explicit `⚠` label, including Board statuses.
+  The marker is independent of the grey Board-category treatment and is also
+  described in the chart's accessible text.
+
+## 1.35.1
+
+### Status-time alert correction
+
+- Applied the observed-period average-time alert consistently to **every** configured
+  status, including Board statuses. The Board marker remains a neutral category cue;
+  it no longer suppresses an alert when its observed-period average is strictly above
+  two days.
+- Updated the Build and Run legends, SVG descriptions, Markdown export and
+  documentation accordingly.
+
+## 1.35.0
+
+### Status-time analysis refinement
+
+- Removed the **Cumulative time by status** chart from Build and Run dashboards and
+  from the local Markdown export.
+- Changed **Average time by status** into a grouped comparison chart: the observed
+  analysis-period average is displayed next to the average for the selected week.
+  Selected-week averages are calculated locally from the already loaded changelog
+  intervals; no additional JIRA request is made.
+- Configured statuses remain visible when no interval is observed in the selected
+  week, with an unavailable value (`–`) rather than a misleading zero.
+- Clarified the Board-status treatment with an explicit `(Board)` label and a neutral
+  grey patterned category marker, visually distinct from the blue observed-period
+  and purple selected-week series. Board statuses remain excluded from the > 2 days
+  alert.
+- The version intentionally skips the retired local 1.34.x experimental builds so
+  different archives are never distributed under the same version number.
+
+## 1.33.0
+
+### Status-time analysis
+
+- Added an ordered, per-team **Kanban flow statuses** setting for both Build and Run.
+  It is used to reconstruct status intervals from complete JIRA changelogs; closing
+  statuses are automatically omitted if entered by mistake.
+- Added **Cumulative time by status** and **Average time by status** charts to both
+  dashboards. They aggregate the entire loaded analysis period, independently of
+  Week's KPIs, and clip every interval to that period.
+- Reopened tickets are measured again after they return from a closing status. Statuses
+  with no observed duration are hidden; incomplete changelogs and unknown initial
+  statuses are disclosed rather than guessed.
+- Board statuses remain visible with a distinct patterned treatment but are excluded
+  from the average-time alert. A non-board status averaging strictly more than two days
+  receives a labelled alert with an accessible chart description.
+- Added the same status-time table to local Markdown exports. It contains aggregate
+  values only and does not add ticket descriptions or any new network request.
+
+## 1.32.0
+
+### Local Markdown export for AI analysis
+
+- Added mode-specific **Download Markdown** and **Copy Markdown** controls to the
+  dashboard. They export only the mode currently displayed, without another JIRA call.
+- Added the privacy-preserving **Markdown: Summary** level (default): team and period
+  metadata, Week's KPIs, trends, weekly series and interpretation notes, with no
+  individual ticket rows.
+- Added the explicit **Markdown: Analysis-ready (ticket lists)** level. It includes
+  the displayed Build completed-ticket list or the five Run ticket lists, including
+  labels and historical `Unavailable` values where appropriate.
+- Markdown is built and downloaded/copied entirely in the browser. It never contains
+  JIRA descriptions, the JIRA URL, e-mail or API token.
 
 ## 1.31.0
 

@@ -99,21 +99,23 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   margin-bottom: 14px;
   background: var(--panel-2);
 }
-.project-head { display: flex; gap: 10px; margin-bottom: 12px; }
-.project-head .p-name { font-weight: 600; }
-
-.save-bar {
-  position: sticky;
-  bottom: 0;
+.project-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 14px;
-  padding: 14px 0 4px;
-  background: linear-gradient(0deg, var(--bg) 70%, transparent);
+  margin-bottom: 14px;
 }
-.test-result { font-size: 13px; }
-.test-result.ok { color: var(--good); }
-.test-result.err { color: var(--bad-text); }
+.project-name-field {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.project-head .p-remove {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-top: 0;
+}
 
 /* Issue types loaded from JIRA: checkbox list */
 .hidden { display: none !important; }
@@ -127,6 +129,10 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   border-radius: 8px;
   background: var(--panel-2, transparent);
 }
+.status-box {
+  max-height: 180px;
+  overflow: auto;
+}
 .types-box label {
   display: flex;
   align-items: center;
@@ -136,7 +142,19 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   cursor: pointer;
 }
 .types-box input { width: auto; margin: 0; }
-
+.types-box label.choice-disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+.types-box label.picker-all {
+  flex: 0 0 100%;
+  padding-bottom: 7px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+.types-box label.choice-disabled input { cursor: not-allowed; }
 @media (max-width: 680px) {
   .wrap { padding: 18px 14px 80px; }
   .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }
@@ -201,4 +219,88 @@ small.hint {
   padding: 1px 5px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+/* Thematic groups within each team make the settings easier to scan. */
+.project-section {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.project-section > h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  font-size: 14px;
+}
+.project-section > h3::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.project-workflow { border-left-color: #64748b; }
+.project-build { border-left-color: #38bdf8; }
+.project-run { border-left-color: #a78bfa; }
+.project-subsection {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.project-subsection > h4 { margin: 0 0 10px; font-size: 13px; }
+.project-story-points .field { margin-bottom: 0; }
+
+/* Per-team Lead/Cycle filter subsections */
+.project-duration-filters { margin-top: 14px; }
+.project-duration-filters > h4 { margin-bottom: 6px; font-size: 14px; }
+.duration-filter { border: 1px solid var(--border); border-radius: 10px; padding: 14px; background: var(--panel-2); }
+.duration-filter h5 { margin: 0 0 12px; font-size: 14px; }
+.duration-filter .field { margin-bottom: 10px; }
+
+/* JIRA choice loading state and explicit, line-by-line save feedback. */
+.test-result {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.choice-status {
+  display: block;
+  margin-top: 6px;
+  white-space: normal;
+}
+.choice-status:empty { display: none; }
+.choice-status.loading,
+.test-result.loading { color: var(--muted); }
+.test-result.ok { color: var(--good); }
+.test-result.warn { color: #facc15; }
+.test-result.err {
+  color: var(--bad-text);
+  white-space: pre-line;
+}
+#saveResult:empty { display: none; }
+#saveResult.save-error-list {
+  display: block;
+  flex: 1 0 100%;
+  margin-top: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  border-left: 4px solid var(--bad);
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--bad-text);
+}
+#saveResult.save-error-list strong { display: block; margin-bottom: 6px; }
+#saveResult.save-error-list ul {
+  margin: 0;
+  padding-left: 22px;
+}
+#saveResult.save-error-list li + li { margin-top: 4px; }
+.save-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }

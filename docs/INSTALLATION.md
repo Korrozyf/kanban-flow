@@ -70,7 +70,16 @@ Two cases, depending on how the version was published.
    - **API token**: create one at
      <https://id.atlassian.com/manage-profile/security/api-tokens> → *Create API token*.
      The token is stored locally in your browser.
-3. Add your teams (JIRA project key, Build or Run mode, exact status names).
+3. Add your teams (JIRA project key, Build or Run mode). Workflow categories — Backlog,
+   Waiting, Work in progress, and Workflow end — are shared by both modes; board statuses
+   are derived from the three on-board groups. Build Committed throughput counts only
+   Waiting and Work in progress, excluding Workflow end. JIRA issue types load automatically
+   after the project key is entered. Workflow status choices load automatically for the selected
+   project issue types; Build Lead/Cycle issue types and common start-status dropdowns
+   load as you use those settings. Issue types and workflow/status-time selections use
+   checkboxes; the Lead/Cycle start statuses are dropdowns. No manual load buttons or
+   free-text type/status fields are required. This needs a valid JIRA connection and
+   permission to browse the project.
 4. **Save**, then open the dashboard.
 
 Every setting is documented in the [README](../README.md). To know exactly what each
@@ -150,7 +159,8 @@ What changes in each version is listed in [CHANGELOG.md](../CHANGELOG.md).
 
 - **No data / 401 error**: invalid or expired API token, regenerate it.
 - **403 or 404 error**: the JIRA URL or the project key is wrong.
-- **Counters stuck at 0**: the status names you entered must match the JIRA ones
-  **exactly** (the comparison ignores case and surrounding spaces, but not typos).
+- **Status-based counters stuck at 0**: verify that the project's intended statuses
+  are selected in the correct **Workflow status setup** categories. Matching ignores case
+  and surrounding spaces, but a different or misspelled status will not match.
 - Anything else: open an **Issue** on the repository, stating your browser, the extension
   version and the error message (**never paste your API token**).

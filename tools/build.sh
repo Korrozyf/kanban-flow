@@ -61,11 +61,13 @@ while IFS= read -r js; do
   node --check "$js" || { echo "SYNTAX ERROR: $js" >&2; exit 1; }
 done < <(find . -maxdepth 2 -name '*.js' -not -name '*.min.js' -not -path './dist/*' -not -path './node_modules/*')
 
-rm -rf dist
+# Keep earlier test/release archives intact; this build only writes the current version.
 mkdir -p dist
 
 ZIP="dist/kanban-flow-${VERSION}.zip"
 XPI="dist/kanban-flow-${VERSION}.xpi"
+# Recreate this version from scratch while preserving all other versioned archives.
+rm -f "$ZIP" "$XPI"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 mkdir -p "$STAGE/chrome" "$STAGE/firefox"

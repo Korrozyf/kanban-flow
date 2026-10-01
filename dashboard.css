@@ -197,6 +197,36 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .chart { width: 100%; height: auto; display: block; }
 .chart-box.chart-scroll { cursor: ew-resize; }
 .chart-box.chart-scroll .chart { width: auto; max-width: none; }
+.lead-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 6px;
+}
+.lead-overview-item {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.lead-overview-item h4 {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+.lead-overview-value {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.lead-overview-item .metric-note { overflow-wrap: anywhere; }
+.lead-overview-item a { font-weight: 600; }
+@media (max-width: 640px) {
+  .lead-overview-grid { grid-template-columns: 1fr; }
+}
 .band-selected { fill: rgba(96, 165, 250, 0.10); stroke: var(--accent-2); stroke-width: 2; }
 .axis-label-selected { fill: var(--link); font-weight: 700; text-decoration: underline; }
 .dot-selected { stroke: var(--link); stroke-width: 3; }
@@ -220,6 +250,42 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .line-current { stroke: var(--current-line); stroke-width: 2.5; stroke-dasharray: 5 4; }
 .dot { fill: var(--accent); }
 .dot-current { fill: var(--current); stroke: #0f1419; stroke-width: 1.5; }
+
+.status-time-section { margin-top: 20px; }
+.status-time-section h2 { margin: 0 0 6px; font-size: 16px; }
+.status-time-content.hidden { display: none; }
+.status-time-charts { margin-top: 14px; }
+.status-time-legend {
+  display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 0;
+  color: var(--muted); font-size: 12px;
+}
+.status-time-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.status-time-key { width: 13px; height: 13px; display: inline-block; border-radius: 3px; }
+.status-time-key-observed { background: var(--accent); }
+.status-time-key-selected { background: var(--engage); }
+.status-time-key-board {
+  border: 1px solid #94a3b8;
+  background: repeating-linear-gradient(45deg, #94a3b8 0 1px, transparent 1px 4px);
+}
+.status-time-key-alert { border: 2px solid var(--bad-text); position: relative; }
+.status-time-key-alert::after { content: "!"; color: var(--bad-text); font-size: 10px; font-weight: 800; position: relative; left: 3px; top: -2px; }
+.status-time-observed { fill: var(--accent); }
+.status-time-selected { fill: var(--engage); }
+.category-band.status-time-board-category {
+  fill: rgba(148, 163, 184, 0.14);
+  stroke: #94a3b8;
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+.axis-label.status-time-board-category { fill: #cbd5e1; font-weight: 700; }
+/* A threshold breach is deliberately marked on the exact data bar, rather
+   than on the whole status category. The warning sign in the label is a
+   redundant textual cue, so the meaning is never carried by colour alone. */
+.bar.status-time-alert-bar {
+  stroke: var(--bad-text);
+  stroke-dasharray: 5 3;
+  stroke-width: 2;
+}
 
 .comparison-note {
   background: rgba(96, 165, 250, 0.12);
@@ -341,7 +407,7 @@ details summary { cursor: pointer; font-weight: 600; }
 .list-details > summary small { color: var(--muted); font-weight: 400; }
 .list-details > .table-wrap { margin-top: 12px; }
 .jql-note { color: var(--muted); font-size: 12px; margin: 14px 0 0; }
-.jql-note code { background: var(--panel-2); padding: 2px 6px; border-radius: 6px; }
+.jql-note code { background: var(--panel-2); padding: 2px 6px; border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .footer { text-align: center; color: var(--muted); font-size: 12px; padding: 16px; }
 
