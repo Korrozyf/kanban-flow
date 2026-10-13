@@ -118,7 +118,7 @@ your site's REST API v3.
 | Endpoint | Method | When | Why |
 | --- | --- | --- | --- |
 | `/rest/api/3/myself` | GET | *Test connection* button | Credential check. |
-| `/rest/api/3/search/jql` | POST | Every analysis | Ticket search, paginated with `nextPageToken`, 100 issues per page, `expand: "changelog"`. |
+| `/rest/api/3/search/jql` | POST | Every analysis | Ticket search, paginated with `nextPageToken`, 100 issues per page (up to 100 pages), `expand: "changelog"`. Run sends separate weekly and monthly candidate searches; overlapping issue keys share one full-changelog fetch. If the optional monthly search fails or reaches the page cap, weekly Run results still render and the monthly chart is marked unavailable. |
 | `/rest/api/3/issue/{key}/changelog` | GET | Fallback | Only when the changelog embedded in the search result is **truncated** (`total > histories.length`). Paginated. |
 | `/rest/api/3/priority` | GET | Run analysis | Real priority order of your site, used to sort ticket lists. Falls back to a built-in order if unavailable. |
 | `/rest/api/3/issue/{key}/comment?maxResults=1&orderBy=created` | GET | Run analysis | Date of the **first comment**, one call per highest-priority ticket. |
@@ -131,7 +131,7 @@ your site's REST API v3.
 - build: `created`, `resolutiondate`, `summary`, `labels`, `status`, `issuetype` (+ the story
   points custom field when the option is on);
 - run: `created`, `updated`, `resolutiondate`, `resolution`, `summary`, `labels`,
-  `status`, `assignee`, `priority`;
+  `status`, `assignee`, `priority` (used by both weekly and monthly searches);
 - board snapshot and flow-signal queries: the default four fields — only the changelog
   matters there;
 - status-time query: `created`, `summary`, `labels`, `status` and a complete changelog.
@@ -148,14 +148,23 @@ and the card says so; the rest of the dashboard is unaffected.
 ## 4. JQL queries
 
 Dates are injected as `YYYY-MM-DD`. In JQL a date without a time means **00:00**, so
-`BEFORE "<Monday following the last week>"` really means *up to Sunday 23:59*. Every
-date-bounded query is bounded on **both** sides. Current-stock queries (for open Run
-tickets and open Epics in the Build Lead Time overview) intentionally have no historical
-window bound.
+`BEFORE "<Monday following the last week>"` means *up to Sunday 23:59*. JQL is a
+candidate pre-filter: date predicates are not uniformly two-sided, and exact half-open
+event windows are enforced during local bucketing. Some branches intentionally have no
+historical bound to recover current stock or fallback closures (see §4.4–§4.5). The
+`resolution IS EMPTY` Run branch and the open-Epic query are current-stock queries and
+intentionally have no historical lower bound.
 
 Notation below: `W0` = Monday 00:00 of the first week of the window, `Wn` = Monday 00:00
 of the week following the last week of the window, `TYPES` = `AND issuetype IN (…)` when
-issue types are configured, `EXTRA` = `AND (<additional JQL>)` when set.
+issue types are configured, `EXTRA` = `AND (<additional JQL>)` when set. Project keys
+are validated against JIRA's letter-first, letters/digits/underscore format before a JQL
+query is built, so malformed or imported keys cannot escape the selected project scope.
+Run uses separate weekly and monthly JIRA searches. The weekly search (§4.4) starts its
+resolution and closing-transition candidate branches at `W0` but includes unresolved
+tickets without a historical lower bound; it is not widened back to `M0`. The monthly
+search (§4.5) independently uses `M0` / `M1` for creation and resolution candidates, plus
+its status-transition and current-Done fallback branches.
 
 ### 4.1 Build — delivered tickets (`buildJql`)
 
@@ -216,27 +225,71 @@ ORDER BY updated DESC
 Feeds: added to board, moved back to backlog. The JQL is only a **pre-filter**: the
 actual counting re-reads each ticket's changelog to apply the counting window.
 
-### 4.4 Run — support tickets (`buildRunJql`)
+### 4.4 Run — weekly support tickets (`buildRunJql`)
 
 ```jql
 project = "KEY"
   AND labels IN ("run", "support")
   AND created < "Wn"
-  AND (   created >= "W0"
-       OR resolution IS EMPTY
+  AND (   resolution IS EMPTY
        OR resolutiondate >= "W0"
        OR status CHANGED TO ("Done", "Closed") AFTER "W0" )
   TYPES EXTRA
 ORDER BY created ASC
 ```
 
-The branches load creations and closures in the range, plus tickets created earlier
-that may still be open at a historical cut-off. The final `created < Wn` prevents future
-issues entering an anchored Complete range. Closing-status transitions are queried as
-well as resolution dates because JIRA may close a ticket without setting a resolution.
+This query keeps unresolved tickets for stock reconstruction and resolved / closed
+candidates since the first displayed week. `created < Wn` excludes tickets that do not
+exist by the final selected-week cut-off. The `resolutiondate >= W0` and closing-status
+transition (`AFTER W0`) branches are candidate prefilters with no JQL upper event-date
+bound; exact weekly counts are filtered locally against each selected week's half-open
+bounds. The `resolution IS EMPTY` branch has no historical lower bound, because tickets
+created before the displayed range may still contribute to an open-ticket snapshot. The
+monthly search is independent (§4.5); its earlier start does not widen this weekly query.
 
-The exact JQL actually sent is displayed at the bottom of the dashboard, so you can
-paste it into JIRA and check the population yourself.
+### 4.5 Run — monthly opened / closed (`buildRunMonthlyJql`)
+
+The monthly chart issues a separate candidate query, independent of the weekly period
+control. `M0` is January 1 of the previous calendar year; `M1` is the first day of the
+month after the current month. Creation and resolution-date branches use these bounds;
+the full candidate search is not date-bounded because of the fallback branch below.
+
+```jql
+project = "KEY"
+  AND (   (created >= "M0" AND created < "M1")
+       OR (resolutiondate >= "M0" AND resolutiondate < "M1")
+       OR status CHANGED TO ("Done", "Closed") AFTER "day before M0" BEFORE "day after M1"
+       OR (resolution IS EMPTY AND status IN ("Done", "Closed")) )
+  AND labels IN ("run", "support")
+  TYPES EXTRA
+ORDER BY created ASC
+```
+
+The creation and resolution-date branches are bounded to `[M0, M1)`. The status-change
+branch is widened by one calendar day on each side as a candidate pre-filter so
+exact-midnight closures are not lost to JQL's `AFTER` / `BEFORE` semantics; local month
+buckets enforce the precise half-open bounds. The final branch,
+`(resolution IS EMPTY AND status IN (<configured closing statuses>))`, is intentionally
+unbounded by date: it retrieves tickets currently in a closing status with no resolution,
+so a ticket with no usable closing transition can use the Run fallback `closedAt = now`.
+When no closing statuses are configured, both status-dependent branches are omitted.
+
+The query uses the configured project, Run labels, selected **Issue types counted**, and
+**Additional JQL**; unlike the Epic queries, it does not bypass the shared team scope.
+Overlapping weekly and monthly result sets are deduplicated before any full changelog is
+fetched. Monthly candidates with incomplete changelogs are reported in the chart note;
+created counts remain based on JIRA's creation date, while a closing count may be affected
+if its closing transition cannot be reconstructed.
+
+Because that fallback can include old tickets, a large candidate set—especially a broad
+scope with many currently Done tickets whose resolution is empty—may reach JIRA's
+100-page safety cap. If this separate query fails or reaches the cap, the weekly Run
+analysis continues. The monthly panel and Markdown export state that the comparison is
+unavailable instead of showing misleading zero counts; retry with a narrower project,
+issue-type selection or Additional JQL if the candidate population is too large.
+
+The exact weekly and monthly JQL are both displayed at the bottom of the dashboard, so
+you can paste each into JIRA and check its candidate population.
 
 ---
 
@@ -560,7 +613,36 @@ createdPrevSameElapsed= count( creation date ∈ [previous week start, prevCut[ 
 The equal-elapsed-duration principle applies only to the true current week; historical
 weeks compare complete weeks. Trend: **fewer is better** (more creations = more load).
 
-### 7.4 Creations per day
+### 7.4 Monthly opened vs closed
+
+The monthly chart is independent of the Last weeks / Since start date selector. It shows
+January through the current local-calendar month of the current year, with four series:
+created and closed in the current year, and created and closed in the same months of the
+previous year. **Opened** means the JIRA creation date falls in that month; **closed**
+uses the canonical Run `closedAt` from §7.0. Each ticket is counted at most once per
+month per flow series, using half-open calendar-month bounds.
+
+Completed months compare the full month with its full same-name month last year. The
+current month is partial and is compared with the same elapsed duration of the matching
+month last year:
+
+```
+currentCut = now
+elapsed = currentCut − currentMonthStart
+previousCut = min(previousMonthStart + elapsed, previousMonthEnd)
+```
+
+Thus a short prior-year month is capped at its exclusive end; the comparison never spills
+into the following month. The chart uses the same Run scope—project key, Run labels,
+selected Issue types counted and Additional JQL—as the weekly statistics, but through the
+independent monthly candidate search in §4.5; it does not widen the weekly search. Its
+date-bounded branches span `M0`
+(January 1 of the previous year) to `M1` (the first day of the next month); the closing-
+status pre-filter is widened by a calendar day on each side, and the currently-Done/no-
+resolution fallback remains intentionally unbounded. The current month's displayed values
+are bounded at `now`; future dates are not counted.
+
+### 7.5 Creations per day
 
 For the reference week and the previous week, creations are split across the 7 calendar
 days:
@@ -575,7 +657,7 @@ days of the reference week have started, so the chart does not compare a day tha
 not happened yet. Monday→Friday are always displayed; **Saturday and Sunday only appear
 if at least one of the two weeks has a creation on them**.
 
-### 7.5 Average resolution time
+### 7.6 Average resolution time
 
 ```
 population = tickets closed within the reference week      (= the closed list)
@@ -587,13 +669,13 @@ the same elapsed duration** (`[previous week start, prevCut[`). Trend: shorter i
 better. The card carries a coloured dot with the list thresholds (≤ 1 day, ≤ 2 days,
 > 2 days).
 
-### 7.6 Unassigned tickets
+### 7.7 Unassigned tickets
 
 Snapshot at the selected cut-off: open tickets with no reconstructed assignee, sorted
 by ascending creation date. A genuinely unassigned value is distinct from an assignee
 history that is unavailable.
 
-### 7.7 Highest-priority tickets
+### 7.8 Highest-priority tickets
 
 Snapshot at the selected cut-off: tickets whose reconstructed priority is one of the
 team's configured "highest" values, sorted by priority descending then creation
@@ -648,9 +730,11 @@ spelling out the bracket.
 
 ### 8.3 Exclusivity of counts
 
-Each weekly indicator attaches a ticket to **exactly one** week, the one containing its
-reference event. The full rationale, including the three deliberately non-exclusive
-indicators, is in the README section
+Each weekly indicator attaches a ticket to **exactly one** week, and each monthly flow
+series attaches it to **exactly one** calendar month, according to its creation or
+canonical closing date. The year-over-year bar is a separate comparison series; it does
+not carry a ticket between months within either year. The full rationale, including the
+three deliberately non-exclusive weekly indicators, is in the README section
 [Exclusivity of counts](../README.md#exclusivity-of-counts).
 
 ---
@@ -670,13 +754,17 @@ indicators, is in the README section
 | Open tickets (card & lists) | run | §4.4 | stock at selected cut-off | closing statuses, run "Backlog" statuses |
 | Closed tickets | run | §4.4 | closing date | closing statuses |
 | Created tickets | run | §4.4 | creation date | run labels |
+| Monthly opened / closed | run | §4.5 | creation / closing date, calendar month | run labels; project, issue types and Additional JQL |
 | Creations per day | run | §4.4 | creation date | run labels |
 | Average resolution time | run | §4.4 | closing date | closing statuses |
 | Unassigned | run | §4.4 | stock at selected cut-off | run labels |
 | Highest priority | run | §4.4 + comments | stock at selected cut-off | "highest" priorities |
 
-All rows additionally depend on: project key, issue types counted, additional JQL,
-selected period/reference week, and "stable" threshold (trend wording).
+All team-scoped rows additionally depend on: project key, Run labels where applicable,
+Issue types counted and Additional JQL. Weekly rows also use the selected period and
+reference week; weekly trend wording uses the "stable" threshold. The monthly Run chart
+always uses the current calendar year and same months last year, independent of the
+weekly period selector.
 
 ---
 
@@ -688,8 +776,9 @@ AI service.
 
 - **Markdown: Summary** (default) contains metadata, the selected **Week's KPIs**,
   the Lead Time overview, weekly trends and series, selected-week daily Run creations,
-  the status-time averages for the observed period and selected week, plus concise
-  interpretation notes. It contains no individual ticket row; the latest Lead Time is
+  the status-time averages for the observed period and selected week, the Run monthly
+  opened/closed comparison, plus concise interpretation notes. It contains no individual
+  ticket row; the latest Lead Time is
   reported without a ticket key in this level.
 - **Markdown: Analysis-ready (ticket lists)** adds only the ticket fields visible in
   the dashboard: key, summary, labels and the relevant status, priority, assignee,

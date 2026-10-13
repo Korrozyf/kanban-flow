@@ -440,6 +440,36 @@ details summary { cursor: pointer; font-weight: 600; }
 .swatch-closed { background: var(--accent); }
 .swatch-open-current { background: var(--current-2); }
 .swatch-closed-current { background: var(--current); }
+.bar-month-created-current { fill: var(--engage); }
+.bar-month-closed-current { fill: var(--accent); }
+.bar-month-created-previous {
+  fill: var(--engage);
+  fill-opacity: 0.48;
+  stroke: var(--engage);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+.bar-month-closed-previous {
+  fill: var(--accent);
+  fill-opacity: 0.48;
+  stroke: var(--accent-2);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+.swatch-month-created-current { background: var(--engage); }
+.swatch-month-closed-current { background: var(--accent); }
+.swatch-month-created-previous {
+  background: var(--engage);
+  opacity: 0.65;
+  border: 1px dashed var(--engage);
+}
+.swatch-month-closed-previous {
+  background: var(--accent);
+  opacity: 0.65;
+  border: 1px dashed var(--accent-2);
+}
+.monthly-data-details { margin-top: 10px; }
+.monthly-data-details summary { color: var(--muted); }
 
 /* Age counters for open tickets (run):
    green 0-1 day, orange 1-2 days, red > 2 days. */

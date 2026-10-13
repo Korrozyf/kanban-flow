@@ -254,7 +254,7 @@
             <span id="runPeriodHint" class="period-hint">Last weeks = current week + 4 previous. Since start date = up to the first 52 weeks from the shared start date. </span>
           </fieldset>
           <p id="runPeriodWarning" class="comparison-note hidden" role="status" aria-live="polite"></p>
-          <p class="cards-caption">Kanban <strong>run</strong> — tickets identified by their labels. Weeks from Monday 00:00 to Sunday 23:59. Key figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> — the trend compares it to the previous week.</p>
+          <p class="cards-caption">Kanban <strong>run</strong> — tickets identified by their labels. Weeks from Monday 00:00 to Sunday 23:59. Key figures for <span class="week-context">the <strong>current week</strong> ("current" badge)</span> — the trend compares it to the previous week. The monthly opened/closed chart always shows January through the current month against the same months last year, independent of the weekly period.</p>
           <div class="cards">
             <div class="card card-current">
               <div class="card-head">
@@ -324,6 +324,34 @@
               </div>
               <div id="runDailyChart" class="chart-box" data-chart-type="daily"></div>
               <p class="metric-note" id="runDailyNote"></p>
+            </div>
+            <div class="panel chart-panel chart-panel-full" id="runMonthlyPanel">
+              <h3>Opened vs closed by month <small>(created / closed — calendar year vs same months last year)</small></h3>
+              <div class="legend-group">
+                <h4 id="runMonthlyCurrentYear">Current year</h4>
+                <p class="legend legend-series">
+                  <span class="legend-item"><span class="swatch swatch-month-created-current"></span> Opened (created)</span>
+                  <span class="legend-item"><span class="swatch swatch-month-closed-current"></span> Closed</span>
+                </p>
+              </div>
+              <div class="legend-group">
+                <h4 id="runMonthlyPreviousYear">Previous year</h4>
+                <p class="legend legend-series">
+                  <span class="legend-item"><span class="swatch swatch-month-created-previous"></span> Opened (created)</span>
+                  <span class="legend-item"><span class="swatch swatch-month-closed-previous"></span> Closed</span>
+                </p>
+              </div>
+              <div id="runMonthlyChart" class="chart-box" data-chart-type="monthly"></div>
+              <p id="runMonthlyNote" class="metric-note" role="status" aria-live="polite"></p>
+              <details class="monthly-data-details">
+                <summary>Monthly counts — opened (created) and closed</summary>
+                <div class="table-wrap">
+                  <table id="runMonthlyTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </details>
             </div>
           </div>
 

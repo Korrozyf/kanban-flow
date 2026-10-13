@@ -17,7 +17,8 @@ open an issue if something looks wrong.
 - **Two Kanban types per team**: each project is configured in **Build** mode
   (flow: committed / delivered throughput, lead & cycle time, added to board / moved
   back to backlog) or **Run** mode (support: open, closed, created tickets, average
-  resolution time, unassigned / highest-priority lists). See the "Run mode" section
+  resolution time, monthly opened-vs-closed comparisons, unassigned / highest-priority
+  lists). See the "Run mode" section
   below.
 - **Team / project selection** via a dropdown menu (multi-team).
 - **Update notification**: the extension compares its version with the latest
@@ -103,8 +104,9 @@ open an issue if something looks wrong.
   (readable in a meeting or report). The file is saved
   to the browser's download folder as `kanban-flow_<team>_<date>_<time>.png|jpg`.
 - **Export displayed data as Markdown**: choose **Markdown: Summary** for metadata,
-  Week's KPIs, the Epic Lead Time overview, trends, weekly series and interpretation notes
-  without ticket keys; choose **Markdown: Analysis-ready (ticket lists)** only when
+  Week's KPIs, the Epic Lead Time overview, trends, weekly series, the Run monthly
+  opened/closed comparison and interpretation notes without ticket keys; choose
+  **Markdown: Analysis-ready (ticket lists)** only when
   ticket-level data is appropriate to share. **Download Markdown** saves the mode currently shown;
   **Copy Markdown** places identical content on the clipboard for an AI agent or editor.
   The export never includes JIRA ticket descriptions and is generated locally.
@@ -172,6 +174,7 @@ selected reference week without presenting a historical selection as current. Me
 |------------|--------|
 | **Open tickets** | The weekly chart counts tickets by **creation week**. The KPI and two lists are a stock reconstructed at the selected week's cut-off: "**open tickets on the board**" (non-backlog status) and "**unplanned open tickets (backlog)**". The cut-off is the end of a past week or now for the current week. Tickets created before the loaded range are included when still open at that cut-off. |
 | **Closed tickets** *(mirrors the open-tickets stat)* | Number and list of tickets whose **closing date** falls in the selected week (entry into a closing status, or resolution date). For a past week the full week is used; for the current week, only elapsed time is used and the comparison uses the same elapsed duration in the previous week. |
+| **Opened vs closed by month** | January through the current month of the current calendar year, compared with the same months last year. Opened means created during the month; closed uses the Run closing-date rule. Completed months compare full months; the current month compares month-to-date against the same elapsed duration last year, capped at that month's end. It uses the team's project, Run labels, Issue types counted and Additional JQL, regardless of the weekly analysis-period selection. If its separate query fails or reaches JIRA's result limit, weekly Run metrics remain available and the monthly chart is explicitly marked unavailable. |
 | **Tickets created per day** | Chart of creations per day in the selected week compared with its previous loaded week. Working days (Mon→Fri) are always shown; weekend days appear only when non-zero. |
 | **Created tickets** | Number created in the selected week. For the current week, the comparison uses the same elapsed duration; past weeks compare complete weeks. |
 | **Average resolution time** | Average `created → closed` delay for closures in the selected week. For the current week, the comparison uses the same elapsed duration; shorter is better. |
@@ -197,9 +200,19 @@ selected reference week without presenting a historical selection as current. Me
   the current incomplete week, created/closed/resolution comparisons use the same
   elapsed duration in the previous week. The Run "Open tickets" card compares stocks
   reconstructed at each week's cut-off.
-- **No carry-over between weeks**: each weekly metric only counts items whose reference
-  event (creation, closing, transition, ticket end) falls within the
-  `[Monday 00:00, next Monday 00:00[` bounds of the relevant week.
+- **No carry-over between weeks or months**: each weekly or monthly flow metric only
+  counts items whose reference event (creation or closing) falls within that period's
+  half-open calendar bounds. Monthly series are exclusive month by month within each
+  displayed year; the same-month-prior-year bars are a separate comparison series.
+- The monthly comparison uses the same Run project, labels, Issue types counted and
+  Additional JQL scope as weekly statistics, through a separate candidate query. Its
+  creation/resolution branches use `[January 1 of the previous year, first day of the
+  next month)`; the closing-transition prefilter is widened by one calendar day at
+  each end. An intentionally unbounded fallback also retrieves tickets currently in a
+  configured Done status with `resolution IS EMPTY`, so a ticket without a usable closing
+  transition can be dated closed at `now`. In a broad scope, many such tickets can make
+  the monthly candidate query hit JIRA's 100-page cap. If that happens, the monthly chart
+  is marked unavailable while weekly Run results remain available.
 - The first comment is read via `GET /rest/api/3/issue/{key}/comment` (sorted by date).
 
 ### Exclusivity of counts
@@ -215,6 +228,7 @@ its *reference event*:
 | Open tickets (per week, run) | **creation** date |
 | Closed tickets, average resolution time (run) | **closing** date |
 | Creations per day (run) | **creation** date, attached to a single day |
+| Monthly opened / closed (run) | **creation** / canonical **closing** date, attached to a single calendar month in each year |
 
 Lead Time is summarized over the full observed period and by the latest closure; it is
 not a weekly-bucketed display metric. Bounds are **half-open** for weekly indicators:

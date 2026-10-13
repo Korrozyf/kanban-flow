@@ -1,5 +1,26 @@
 # Changelog — Kanban Flow
 
+## 1.46.0
+
+### Add a year-over-year monthly Run flow chart
+
+- Added a Run chart showing tickets opened (created) and closed for January through the
+  current calendar month, alongside the same months in the previous year.
+- Completed months compare full calendar months. The current month is compared month-to-
+  date using the same elapsed duration last year, capped at the previous month's end.
+- The monthly chart uses the existing Run scope: project key, Run labels, Issue types
+  counted, and Additional JQL. Its separate candidate query is independent of the weekly
+  period selection; date-based branches use monthly bounds, while the current-Done fallback
+  remains unbounded so tickets without a usable closing event can be dated closed at now.
+  Overlapping search results are deduplicated before full changelogs are fetched.
+- Added a concise monthly series to local Markdown exports and documented the query,
+  scopes, month boundaries, and comparison behavior.
+- Validated project keys before interpolating them into any JQL builder, preventing a
+  malformed/imported key from escaping the selected project scope.
+- Isolated monthly-query failures from weekly Run analysis. If JIRA rejects the optional
+  query or its 100-page safety limit is reached, weekly results remain available and the
+  monthly panel/export clearly reports that the comparison could not be loaded.
+
 ## 1.45.4
 
 ### Cumulative highlights since the last published release (v1.31.0)

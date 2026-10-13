@@ -182,13 +182,16 @@
     document.querySelectorAll(".chart-box").forEach((box) => {
       const type = box.dataset.chartType || "weekly";
       const statusTime = type === "status-time";
-      const scrollable = statusTime || (r.periodMode === "complete" && (type === "weekly" || type === "week"));
+      const monthly = type === "monthly";
+      const scrollable = statusTime || monthly || (r.periodMode === "complete" && (type === "weekly" || type === "week"));
       box.classList.toggle("chart-scroll", scrollable);
       box.tabIndex = scrollable ? 0 : -1;
       if (scrollable) {
         box.setAttribute("aria-label", statusTime
           ? "Scrollable average time by status comparison chart. Use the horizontal scrollbar to view all statuses."
-          : `Scrollable ${r.weeks.length}-week chart`);
+          : monthly
+            ? "Scrollable monthly Run flow comparison chart. Use the horizontal scrollbar to view all months."
+            : `Scrollable ${r.weeks.length}-week chart`);
       } else {
         box.removeAttribute("aria-label");
       }
@@ -643,6 +646,96 @@
       ],
       ...chartOptions(base, index),
     });
+
+    const monthly = base.monthlyFlow;
+    if (monthly && monthly.months && monthly.months.length) {
+      const months = monthly.months;
+      const monthLabels = months.map((month) => month.label);
+      const currentYearHeading = $("runMonthlyCurrentYear");
+      const previousYearHeading = $("runMonthlyPreviousYear");
+      if (currentYearHeading) currentYearHeading.textContent = String(monthly.year);
+      if (previousYearHeading) previousYearHeading.textContent = String(monthly.previousYear);
+      const openedCurrent = months.map((month) => month.created);
+      const closedCurrent = months.map((month) => month.closed);
+      const openedPrevious = months.map((month) => month.previousCreated);
+      const closedPrevious = months.map((month) => month.previousClosed);
+      const monthlyDescription = months.map((month) =>
+        `${month.label}: ${monthly.year} created ${month.created}, closed ${month.closed}; ` +
+        `${monthly.previousYear} created ${month.previousCreated}, closed ${month.previousClosed}` +
+        (month.isCurrent ? " (month to date and equivalent elapsed period)" : "") + "."
+      ).join(" ");
+      JKDCharts.groupedBarChart($("runMonthlyChart"), {
+        title: `Tickets created and closed by month: ${monthly.year} vs ${monthly.previousYear}`,
+        description: monthlyDescription,
+        labels: monthLabels,
+        series: [
+          { label: `Opened / created ${monthly.year}`, values: openedCurrent, className: "bar-month-created-current" },
+          { label: `Closed ${monthly.year}`, values: closedCurrent, className: "bar-month-closed-current" },
+          { label: `Opened / created ${monthly.previousYear}`, values: openedPrevious, className: "bar-month-created-previous" },
+          { label: `Closed ${monthly.previousYear}`, values: closedPrevious, className: "bar-month-closed-previous" },
+        ],
+        currentIndex: -1,
+        minBandWidth: 70,
+        showValues: false,
+      });
+      const currentMonth = months[months.length - 1];
+      const currentCutoff = monthly.currentCutoff instanceof Date
+        ? monthly.currentCutoff : new Date(monthly.currentCutoff);
+      const previousCutoff = monthly.previousMonthCutoff instanceof Date
+        ? monthly.previousMonthCutoff : new Date(monthly.previousMonthCutoff);
+      $("runMonthlyNote").textContent =
+        `Opened means tickets created; closed uses the latest Workflow end transition, then resolution date, ` +
+        `then now for a currently closed ticket with no reconstructable date. ` +
+        `Completed months compare full calendar months. ${currentMonth.label} ${monthly.year} ` +
+        `is counted through ${currentCutoff.toLocaleString("en-GB")} and compared with ` +
+        `${currentMonth.label} ${monthly.previousYear} through ` +
+        `${previousCutoff.toLocaleString("en-GB")} (same elapsed duration, capped at month end). ` +
+        `The JIRA project, Run labels, Issue types counted and Additional JQL filters apply.` +
+        (monthly.incompleteHistoryCount
+          ? ` ${monthly.incompleteHistoryCount} monthly candidate(s) had incomplete changelogs; closing-date counts may be affected.`
+          : "");
+      const table = $("runMonthlyTable");
+      const headers = ["Month", `Opened / created ${monthly.year}`, `Closed ${monthly.year}`, `Opened / created ${monthly.previousYear}`, `Closed ${monthly.previousYear}`];
+      const headerRow = document.createElement("tr");
+      headers.forEach((label) => {
+        const th = document.createElement("th");
+        th.textContent = label;
+        headerRow.appendChild(th);
+      });
+      table.querySelector("thead").replaceChildren(headerRow);
+      const tableBody = table.querySelector("tbody");
+      tableBody.replaceChildren();
+      months.forEach((month) => {
+        const row = document.createElement("tr");
+        [month.label, month.created, month.closed, month.previousCreated, month.previousClosed]
+          .forEach((value) => {
+            const cell = document.createElement("td");
+            cell.textContent = String(value);
+            row.appendChild(cell);
+          });
+        tableBody.appendChild(row);
+      });
+      const monthlyDetails = $("runMonthlyPanel").querySelector(".monthly-data-details");
+      if (monthlyDetails) monthlyDetails.hidden = false;
+    } else {
+      const chart = $("runMonthlyChart");
+      chart.replaceChildren();
+      chart.textContent = "Monthly comparison unavailable.";
+      const note = $("runMonthlyNote");
+      note.textContent = base.monthlyError
+        ? `The monthly query failed (${base.monthlyError}). Weekly Run metrics remain available. Check the JIRA connection and query scope, then retry.`
+        : "Monthly comparison is unavailable.";
+      const table = $("runMonthlyTable");
+      table.querySelector("thead").replaceChildren();
+      table.querySelector("tbody").replaceChildren();
+      const monthlyDetails = $("runMonthlyPanel").querySelector(".monthly-data-details");
+      if (monthlyDetails) monthlyDetails.hidden = true;
+      const currentYearHeading = $("runMonthlyCurrentYear");
+      const previousYearHeading = $("runMonthlyPreviousYear");
+      if (currentYearHeading) currentYearHeading.textContent = "Unavailable";
+      if (previousYearHeading) previousYearHeading.textContent = "Unavailable";
+    }
+
     // Creation trend by day across the selected week.
     const currentDays = r.createdPerDayCurrent || [];
     const previousDays = r.createdPerDayPrev || [];
@@ -774,7 +867,7 @@
     });
     $("runMaxPrioCount").textContent = r.maxPriorityList.length;
 
-    $("runJqlText").textContent = r.jql;
+    $("runJqlText").textContent = `Weekly metrics: ${r.jql}\nMonthly opened/closed: ${r.monthlyJql}`;
     $("footerInfo").textContent =
       `${project.name} • run • ${r.totalIssues} tickets analysed • ` +
       `updated ${new Date().toLocaleString("en-GB")}`;

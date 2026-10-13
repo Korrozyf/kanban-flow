@@ -61,6 +61,11 @@ while IFS= read -r js; do
   node --check "$js" || { echo "SYNTAX ERROR: $js" >&2; exit 1; }
 done < <(find . -maxdepth 2 -name '*.js' -not -name '*.min.js' -not -path './dist/*' -not -path './node_modules/*')
 
+# Run the dependency-free regression tests before packaging when present.
+if compgen -G "tests/*.test.js" > /dev/null; then
+  node --test tests/*.test.js
+fi
+
 # Keep earlier test/release archives intact; this build only writes the current version.
 mkdir -p dist
 
