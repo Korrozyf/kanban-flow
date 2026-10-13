@@ -139,9 +139,9 @@ your site's REST API v3.
   actual intervals locally.
 
 **Story points field detection.** `GET /rest/api/3/field` is scanned for an exact name
-match among `story points`, `story point estimate`, `points de story`, `story point`,
-then for a loose `/story\s*point/i` match. If nothing is found, the metric is disabled
-and the card says so; the rest of the dashboard is unaffected.
+match among `story points`, `story point estimate`, a French-localized field name,
+and `story point`, then for a loose `/story\s*point/i` match. If nothing is found,
+the metric is disabled and the card says so; the rest of the dashboard is unaffected.
 
 ---
 

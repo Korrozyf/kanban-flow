@@ -1,5 +1,11 @@
 # Changelog — Kanban Flow
 
+## 1.46.1
+
+### Documentation language consistency
+
+- Reworded the metrics reference to describe the French-localized JIRA Story Points field without embedding French prose in the English documentation. The exact localized field-name alias remains in the matcher so it continues to work with French JIRA sites.
+
 ## 1.46.0
 
 ### Add a year-over-year monthly Run flow chart
