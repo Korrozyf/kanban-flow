@@ -1,5 +1,13 @@
 # Changelog — Kanban Flow
 
+## 1.46.2
+
+### Add breathing room to image exports
+
+- Add a 10 CSS-pixel margin on all four sides of PNG and JPG exports, scaled with the
+  capture resolution so dashboard edges and tables no longer sit flush against the image.
+- The margin is added to the export canvas only; the on-screen dashboard is unchanged.
+
 ## 1.46.1
 
 ### Documentation language consistency

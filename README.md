@@ -100,8 +100,8 @@ open an issue if something looks wrong.
   with a header showing team / mode / period / generation date. Ticket lists stay
   **collapsed in the image by default**, even if a list is open on screen, to avoid
   disclosing ticket-level data; explicitly tick *Include ticket lists* when that
-  content belongs in the image. ×2 resolution
-  (readable in a meeting or report). The file is saved
+  content belongs in the image. A 10-pixel margin surrounds the exported dashboard.
+  ×2 resolution (readable in a meeting or report). The file is saved
   to the browser's download folder as `kanban-flow_<team>_<date>_<time>.png|jpg`.
 - **Export displayed data as Markdown**: choose **Markdown: Summary** for metadata,
   Week's KPIs, the Epic Lead Time overview, trends, weekly series, the Run monthly
