@@ -159,6 +159,7 @@ main { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .card h3 small { font-weight: 400; opacity: 0.8; }
 .metric { font-size: 34px; font-weight: 700; margin-top: 6px; }
 .metric-note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.metric-subtitle { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
 
 .trend {
   font-size: 13px;

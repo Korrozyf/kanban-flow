@@ -585,8 +585,8 @@
     const openWhen = ctx.isCurrent ? "as of now" : `at the end of the week ${curLabel}`;
     $("runOpenNote").textContent =
       r.openAtPrevWeekEnd == null
-        ? `open ${openWhen} — no previous week to compare`
-        : `open ${openWhen} — vs ${r.openAtPrevWeekEnd} open at the previous week cut-off`;
+        ? `unresolved ${openWhen} — no previous week to compare`
+        : `unresolved ${openWhen} — vs ${r.openAtPrevWeekEnd} unresolved at the previous week cut-off`;
     $("runCloseValue").textContent = r.closedThisWeek;
     $("runCloseNote").textContent =
       r.closedPrevSameElapsed == null

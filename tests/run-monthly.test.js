@@ -21,6 +21,12 @@ vm.runInContext(
   { filename: "lib/export-markdown.js" }
 );
 
+test("Run unresolved-ticket KPI copy clarifies the board and backlog scope", () => {
+  const html = fs.readFileSync(path.join(__dirname, "..", "dashboard.html"), "utf8");
+  assert.match(html, /<h3>Unresolved tickets <span class="pill-current">current<\/span><\/h3>/);
+  assert.match(html, /<small class="metric-subtitle">On board \+ backlog<\/small>/);
+});
+
 test("monthly flow counts half-open month buckets and compares month-to-date fairly", () => {
   const now = new Date(2026, 2, 15, 12, 0, 0, 0);
   const previousMarchCut = new Date(2025, 2, 15, 12, 0, 0, 0);
@@ -149,6 +155,8 @@ test("Run Markdown summary includes monthly counts without ticket details", () =
     detailLevel: "summary",
     generatedAt: new Date(2026, 2, 15),
   }).markdown;
+  assert.match(output, /\| Unresolved tickets \(on board \+ backlog\) \| 1 \|/);
+  assert.match(output, /Unresolved tickets \(on board \+ backlog\) are a stock at the selected cut-off/);
   assert.match(output, /## Monthly opened vs closed/);
   assert.match(output, /Opened \/ created 2026.*Closed 2026.*Opened \/ created 2025.*Closed 2025/);
   assert.match(output, /\| Jan \| 4 \| 2 \| 3 \| 1 \|/);

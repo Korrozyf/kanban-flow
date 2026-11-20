@@ -125,6 +125,15 @@
           re-import it afterwards: nothing to re-enter. The file can also be
           shared with a colleague so they start with the same teams.
         </p>
+        <div class="field export-project-field">
+          <label id="exportProjectLabel">Projects to include in the export</label>
+          <div class="row export-project-actions">
+            <button id="exportSelectAllBtn" class="btn btn-ghost" type="button">Select all</button>
+            <button id="exportSelectNoneBtn" class="btn btn-ghost" type="button">Select none</button>
+          </div>
+          <div id="exportProjectList" class="export-project-list" role="group" aria-labelledby="exportProjectLabel"></div>
+          <small>Global settings are always included. Select none to export global settings only.</small>
+        </div>
         <div class="row">
           <button id="exportBtn" class="btn">⬇ Export settings</button>
           <button id="importBtn" class="btn">⬆ Import settings</button>

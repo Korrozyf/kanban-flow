@@ -155,6 +155,27 @@ input:focus, select:focus { outline: none; border-color: var(--accent); box-shad
   font-weight: 600;
 }
 .types-box label.choice-disabled input { cursor: not-allowed; }
+.export-project-actions { gap: 8px; }
+.export-project-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 8px 0 4px;
+}
+.export-project-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.export-project-option input { width: auto; margin: 0; }
+.export-project-empty { font-size: 12px; }
+.saved-choice-preview { cursor: default; }
+.saved-choice-note { flex: 0 0 100%; color: var(--muted); font-size: 12px; line-height: 1.5; }
 @media (max-width: 680px) {
   .wrap { padding: 18px 14px 80px; }
   .grid2, .grid3, .grid4 { grid-template-columns: 1fr; }

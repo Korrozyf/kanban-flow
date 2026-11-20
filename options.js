@@ -29,6 +29,9 @@
   const WORKFLOW_PICKERS = WORKFLOW_CATEGORY_PICKERS.map(([input, box]) => [input, box])
     .concat(STATUS_FLOW_PICKERS);
   const ISSUE_TYPE_PICKERS = [".p-types", ".p-lead-types", ".p-cycle-types"];
+  const SAVED_PICKER_GROUPS = ISSUE_TYPE_PICKERS
+    .map((inputSelector) => [inputSelector, `${inputSelector}-box`])
+    .concat(WORKFLOW_PICKERS);
 
   function addProjectRow(project) {
     const tpl = $("projectTemplate");
@@ -57,7 +60,7 @@
       statusTimeFlow: { build: [], run: [] },
       extraJql: "",
     };
-    node.dataset.id = p.id;
+    node.dataset.id = typeof p.id === "string" && p.id ? p.id : JKDStore.uuid();
 
     // Template controls need unique label associations once cloned. Link each
     // field's direct label, control and help text without relying on position or
@@ -149,6 +152,11 @@
     wireIssueTypes(node);
     wireDurationFilters(node);
     wireWorkflowSettings(node);
+    ["lead", "cycle"].forEach((metric) => renderStartStatus(node, metric, [], {
+      preserveSelection: true,
+      allowEmpty: true,
+      placeholder: "Choices load automatically",
+    }));
 
     const modeSel = node.querySelector(".p-mode");
     modeSel.value = p.mode === "run" ? "run" : "build";
@@ -158,8 +166,16 @@
     modeSel.addEventListener("change", applyMode);
     applyMode();
 
-    node.querySelector(".p-remove").addEventListener("click", () => node.remove());
+    node.querySelector(".p-remove").addEventListener("click", () => {
+      node.remove();
+      renderExportProjectSelection();
+    });
+    [nameInput, node.querySelector(".p-key")].forEach((input) => {
+      input.addEventListener("input", renderExportProjectSelection);
+    });
     $("projectList").appendChild(node);
+    renderSavedPickerPreviews(node);
+    renderExportProjectSelection();
   }
 
   function collectProjects() {
@@ -201,6 +217,62 @@
       });
     });
     return projects;
+  }
+
+  function renderExportProjectSelection() {
+    const box = $("exportProjectList");
+    if (!box) return;
+    const previous = new Map(Array.from(box.querySelectorAll("[data-export-project-id]")).map((input) => [
+      input.value,
+      input.checked,
+    ]));
+    const projects = Array.from($("projectList").querySelectorAll(".project")).map((row) => ({
+      id: row.dataset.id || "",
+      name: row.querySelector(".p-name").value.trim(),
+      key: row.querySelector(".p-key").value.trim(),
+    })).filter((project) => project.id && (project.name || project.key));
+    box.replaceChildren();
+    if (!projects.length) {
+      const empty = document.createElement("span");
+      empty.className = "muted export-project-empty";
+      empty.textContent = "No configured projects yet.";
+      box.appendChild(empty);
+      return;
+    }
+    projects.forEach((project) => {
+      const label = document.createElement("label");
+      label.className = "export-project-option";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = project.id;
+      input.dataset.exportProjectId = "true";
+      input.checked = previous.has(project.id) ? previous.get(project.id) : true;
+      const title = project.name || project.key;
+      const detail = project.name && project.key ? ` (${project.key})` : "";
+      label.append(input, document.createTextNode(`${title}${detail}`));
+      box.appendChild(label);
+    });
+  }
+
+  function renderSavedPickerPreviews(row) {
+    SAVED_PICKER_GROUPS.forEach(([inputSelector, boxSelector]) => {
+      const input = row.querySelector(inputSelector);
+      const box = row.querySelector(boxSelector);
+      const selected = parseList(input.value);
+      box.replaceChildren();
+      box.classList.remove("saved-choice-preview");
+      if (!selected.length) {
+        box.classList.add("hidden");
+        return;
+      }
+      box.classList.add("saved-choice-preview");
+      box.classList.remove("hidden");
+      box.setAttribute("role", "note");
+      const note = document.createElement("span");
+      note.className = "saved-choice-note";
+      note.textContent = `Saved selection (not yet verified by JIRA): ${selected.join(", ")}`;
+      box.appendChild(note);
+    });
   }
 
   /* JIRA-backed choices are the sole source for issue-type and status lists.
@@ -275,6 +347,7 @@
     const input = row.querySelector(inputSelector);
     const box = row.querySelector(boxSelector);
     const opts = options || {};
+    box.classList.remove("saved-choice-preview");
     const selected = new Set(parseList(input.value).map(normalizedName));
     const owners = opts.categoryKey ? categoryOwnerMap(row) : new Map();
     box.replaceChildren();
@@ -480,7 +553,17 @@
       select.appendChild(option);
     });
     const match = available.find((status) => normalizedName(status.name) === normalizedName(previous));
-    select.value = match ? match.name : "";
+    if (match) {
+      select.value = match.name;
+    } else if (previous && options && options.preserveSelection) {
+      const saved = document.createElement("option");
+      saved.value = previous;
+      saved.textContent = `${previous} (saved; not yet verified by JIRA)`;
+      select.appendChild(saved);
+      select.value = previous;
+    } else {
+      select.value = "";
+    }
     select.disabled = !available.length && !(options && options.allowEmpty);
     state.common = statuses || [];
     state.available = available;
@@ -537,6 +620,7 @@
     });
     choiceMessage(row, ".p-types-msg", "", "");
     choiceMessage(row, ".p-workflow-status-msg", "", "");
+    renderSavedPickerPreviews(row);
   }
 
   async function loadIssueTypes(row) {
@@ -1087,10 +1171,12 @@
     el.textContent = text;
   }
 
-  /* Export: downloads a JSON reflecting the current form state. */
+  /* Export: downloads current global settings and the selected projects. */
   function exportConfig() {
     const includeToken = $("includeToken").checked;
-    const payload = JKDStore.buildExport(collectConfig(), { includeToken });
+    const projectIds = Array.from($("exportProjectList").querySelectorAll("[data-export-project-id]:checked"))
+      .map((input) => input.value);
+    const payload = JKDStore.buildExport(collectConfig(), { includeToken, projectIds });
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const stamp = new Date().toISOString().slice(0, 10);
@@ -1101,10 +1187,10 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
+    const count = payload.config.projects.length;
+    const projectSummary = count ? `${count} project(s)` : "global settings only";
     backupMsg(
-      includeToken
-        ? "✓ Exported (API token included — keep this file safe)."
-        : "✓ Exported (without the API token).",
+      `✓ Exported ${projectSummary}${includeToken ? " (API token included — keep this file safe)" : " (without the API token)"}.`,
       "ok"
     );
   }
@@ -1126,16 +1212,15 @@
         return;
       }
       applyConfig(config);
-      await Promise.all([ensureIssueTypeChoices(), ensureWorkflowChoices(), ensureDurationChoices()]);
-      const validation = validateSettings();
-      if (validation.errors.length) {
-        backupMsg(`Settings imported into the form but not saved: ${validation.errors.join("\n")}`, "err");
-        if (validation.firstControl) validation.firstControl.focus();
-        return;
-      }
-      await JKDStore.saveConfig(collectConfig());
+      // Restore the complete payload before contacting JIRA. A fresh install may
+      // not have an API token yet, and catalog validation must not block backup
+      // recovery or hide saved selections until credentials are re-entered.
+      await JKDStore.saveConfig(config);
       const suffix = warnings.length ? " — " + warnings.join(" ") : "";
-      backupMsg(`✓ Settings imported and saved (${nb} team(s)).${suffix}`, "ok");
+      const credentialNote = !config.token
+        ? " Enter the API token to load and verify the imported JIRA-backed choices."
+        : "";
+      backupMsg(`✓ Settings imported and saved (${nb} team(s)).${credentialNote}${suffix}`, "ok");
     } catch (e) {
       backupMsg(`✗ ${e.message || "Import failed."}`, "err");
     }
@@ -1246,6 +1331,16 @@
     $("testBtn").addEventListener("click", testConnection);
     $("saveBtn").addEventListener("click", save);
     $("exportBtn").addEventListener("click", exportConfig);
+    $("exportSelectAllBtn").addEventListener("click", () => {
+      $("exportProjectList").querySelectorAll("[data-export-project-id]").forEach((input) => {
+        input.checked = true;
+      });
+    });
+    $("exportSelectNoneBtn").addEventListener("click", () => {
+      $("exportProjectList").querySelectorAll("[data-export-project-id]").forEach((input) => {
+        input.checked = false;
+      });
+    });
     $("importBtn").addEventListener("click", () => $("importFile").click());
     $("importFile").addEventListener("change", (ev) => {
       const file = ev.target.files && ev.target.files[0];

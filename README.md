@@ -172,8 +172,8 @@ selected reference week without presenting a historical selection as current. Me
 
 | Metric | Calculation |
 |------------|--------|
-| **Open tickets** | The weekly chart counts tickets by **creation week**. The KPI and two lists are a stock reconstructed at the selected week's cut-off: "**open tickets on the board**" (non-backlog status) and "**unplanned open tickets (backlog)**". The cut-off is the end of a past week or now for the current week. Tickets created before the loaded range are included when still open at that cut-off. |
-| **Closed tickets** *(mirrors the open-tickets stat)* | Number and list of tickets whose **closing date** falls in the selected week (entry into a closing status, or resolution date). For a past week the full week is used; for the current week, only elapsed time is used and the comparison uses the same elapsed duration in the previous week. |
+| **Unresolved tickets** | The card subtitle is **On board + backlog**. The KPI is a stock reconstructed at the selected week's cut-off, split between unresolved tickets on the board (non-backlog status) and unplanned unresolved tickets in backlog. The weekly chart counts tickets by **creation week**. The cut-off is the end of a past week or now for the current week. Tickets created before the loaded range are included when still unresolved at that cut-off. |
+| **Closed tickets** *(mirrors the Unresolved tickets stat)* | Number and list of tickets whose **closing date** falls in the selected week (entry into a closing status, or resolution date). For a past week the full week is used; for the current week, only elapsed time is used and the comparison uses the same elapsed duration in the previous week. |
 | **Opened vs closed by month** | January through the current month of the current calendar year, compared with the same months last year. Opened means created during the month; closed uses the Run closing-date rule. Completed months compare full months; the current month compares month-to-date against the same elapsed duration last year, capped at that month's end. It uses the team's project, Run labels, Issue types counted and Additional JQL, regardless of the weekly analysis-period selection. If its separate query fails or reaches JIRA's result limit, weekly Run metrics remain available and the monthly chart is explicitly marked unavailable. |
 | **Tickets created per day** | Chart of creations per day in the selected week compared with its previous loaded week. Working days (Mon→Fri) are always shown; weekend days appear only when non-zero. |
 | **Created tickets** | Number created in the selected week. For the current week, the comparison uses the same elapsed duration; past weeks compare complete weeks. |
@@ -198,7 +198,7 @@ selected reference week without presenting a historical selection as current. Me
   affected tickets are excluded from reconstructed historical stocks.
 - Trends compare the **selected reference week** to the **previous loaded week**. For
   the current incomplete week, created/closed/resolution comparisons use the same
-  elapsed duration in the previous week. The Run "Open tickets" card compares stocks
+  elapsed duration in the previous week. The Run **Unresolved tickets** KPI compares stocks
   reconstructed at each week's cut-off.
 - **No carry-over between weeks or months**: each weekly or monthly flow metric only
   counts items whose reference event (creation or closing) falls within that period's
@@ -225,7 +225,7 @@ its *reference event*:
 | --- | --- |
 | Delivered throughput, story points, cycle time | ticket **end** date |
 | Additions to board, moves back to backlog | status **transition** date |
-| Open tickets (per week, run) | **creation** date |
+| Tickets opened (per week, run) | **creation** date |
 | Closed tickets, average resolution time (run) | **closing** date |
 | Creations per day (run) | **creation** date, attached to a single day |
 | Monthly opened / closed (run) | **creation** / canonical **closing** date, attached to a single calendar month in each year |
@@ -246,7 +246,7 @@ Three metrics are **deliberately not** exclusive, because they measure a **stock
   remaining in an eligible status for three weeks is counted in all three. A ticket
   created after the window is excluded; its JIRA status history is replayed only within
   the issue's actual lifetime and the half-open window.
-- **Open tickets (top card, run)** — stock of unresolved tickets at the selected
+- **Unresolved tickets (top card, run)** — stock of unresolved tickets at the selected
   cut-off, compared with the reconstructed stock at the previous loaded cut-off.
 - **Additions to board / moves back to backlog** — these count *transitions*. A ticket
   that goes back and forth in the same week is counted on both sides: that's the churn
@@ -337,12 +337,14 @@ and always on a **temporary Firefox add-on**, wiped on every restart. Hence the
 export/import feature.
 
 ### Update procedure
-1. ⚙ Settings → section **4. Settings backup** → **⬇ Export settings** → a
-   `kanban-flow-config_YYYY-MM-DD.json` file is downloaded.
+1. ⚙ Settings → section **4. Settings backup** → select the projects to include
+   (all are selected by default; **Select none** exports global settings only), then
+   choose **⬇ Export settings** → a `kanban-flow-config_YYYY-MM-DD.json` file is downloaded.
 2. Install the new version (Chrome: *Reload* is enough if it's the same folder, and
    settings are preserved; temporary Firefox: reload the add-on).
 3. ⚙ Settings → **⬆ Import settings** → select the file. Settings are applied **and
-   saved** immediately.
+   saved immediately**, without requiring a live JIRA connection. On a fresh install,
+   enter the API token to load and verify the imported JIRA-backed choices.
 
 ### About the API token
 - It is **not** exported by default (it's a secret equivalent to a password). Check
@@ -352,10 +354,12 @@ export/import feature.
   have to re-enter it if the extension was actually freshly reinstalled.
 
 ### Sharing settings with a colleague
-Export **without** the token and send the file: your colleague imports it, adds their
-own email and their own API token, and starts with the same teams, statuses, and
-settings. The file format is validated on import (`app`, `formatVersion`), statuses are
-cleaned up, and a foreign or corrupted file is rejected with a clear message.
+Select the projects to share, then export **without** the token and send the file: your
+colleague imports it, adds their own email and their own API token, and starts with the
+selected teams, statuses, and global settings. The file format is validated on import
+(`app`, `formatVersion`), statuses are cleaned up, and a foreign or corrupted file is
+rejected with a clear message. Until JIRA choices can be loaded, restored issue-type and
+workflow selections remain visible with an unverified notice instead of appearing empty.
 
 ## Getting a JIRA Cloud API token
 

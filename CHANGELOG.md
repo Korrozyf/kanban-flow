@@ -1,5 +1,20 @@
 # Changelog — Kanban Flow
 
+## 1.47.0
+
+### Make settings backups reliable and selectable by project
+
+- Add an export checklist for saved projects; global settings are always included, while
+  users can choose which projects to include (or export global settings only).
+- Save an imported configuration before any JIRA catalog lookup. A fresh installation can
+  now restore the complete export even before its API token is re-entered; imported
+  issue-type and workflow selections remain visible as unverified until JIRA can confirm
+  them.
+- Add regression coverage for global settings, every current per-project setting,
+  token privacy/preservation, and project-filtered exports.
+- Rename the Run stock KPI to **Unresolved tickets**, add the subtitle **On board + backlog**,
+  and update the live comparison note, Markdown exports, and metric documentation.
+
 ## 1.46.2
 
 ### Add breathing room to image exports

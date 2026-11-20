@@ -99,10 +99,14 @@ token are never included in the image.
 
 Use the **"Settings backup"** section of the options page:
 
-- **Export** produces a JSON file. By default the **API token is not included**
-  (tick the checkbox to add it — in that case, treat the file like a password).
-- **Import** restores that file. An import without a token keeps the token already in
-  place.
+- **Export** produces a JSON file. Choose which configured projects to include; global
+  settings are always included, and **Select none** creates a global-settings-only file.
+  By default the **API token is not included** (tick the checkbox to add it — in that
+  case, treat the file like a password).
+- **Import** saves the configuration immediately, even on a fresh installation without
+  an API token. Saved issue-type and workflow selections are shown as unverified until
+  you re-enter the token and Kanban Flow can load the matching JIRA choices. An import
+  without a token keeps the token already in place.
 
 Export right after your initial setup: it saves you from re-entering everything after a
 reinstall or a machine change.

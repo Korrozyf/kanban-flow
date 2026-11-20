@@ -554,9 +554,9 @@ For every ticket returned by §4.4:
 Priority ordering uses the site's own priority list (`GET /rest/api/3/priority`, highest
 first); unknown or missing priorities sort last.
 
-### 7.1 Open tickets
+### 7.1 Unresolved tickets
 
-Two distinct things share the name:
+The weekly series and KPI describe different things:
 
 **Weekly series** (bar chart) — a **creation-based** count, exclusive between weeks:
 
@@ -564,7 +564,7 @@ Two distinct things share the name:
 opened[w] = count( tickets | creation date ∈ week w )
 ```
 
-**KPI card** — stock at the selected week's cut-off:
+**KPI card** (**Unresolved tickets**, subtitle **On board + backlog**) — stock at the selected week's cut-off:
 
 ```
 openNow = count( tickets open at cut-off ) = board list + unplanned list
@@ -711,7 +711,7 @@ exactly 0 ⇒ direction only, no percentage. Which side is "good":
 | --- | --- |
 | Delivered throughput, committed throughput, delivered story points | yes |
 | Cycle time | no |
-| Open tickets (run), created tickets (run), average resolution time | no |
+| Unresolved tickets (run), created tickets (run), average resolution time | no |
 | Closed tickets (run) | yes |
 
 For the true current week, three Run indicators (closed, created, average resolution
@@ -750,8 +750,8 @@ three deliberately non-exclusive weekly indicators, is in the README section
 | Delivered story points | build | §4.1 | end date | track story points, story points field |
 | Epic Lead Time overview | build | §6.5 | Epic closures in observed period / current open Epics | Project + Epic query; Lead types, start status, fallback, Done category; ignores project Issue types counted and Additional JQL |
 | Cycle time | build | §4.1 | end date | Cycle types, configured start status, Done category, weekly aggregation |
-| Open tickets (series) | run | §4.4 | creation date | run labels |
-| Open tickets (card & lists) | run | §4.4 | stock at selected cut-off | closing statuses, run "Backlog" statuses |
+| Created tickets (weekly Run flow) | run | §4.4 | creation date | run labels |
+| Unresolved tickets (card & lists) | run | §4.4 | stock at selected cut-off | closing statuses, run "Backlog" statuses |
 | Closed tickets | run | §4.4 | closing date | closing statuses |
 | Created tickets | run | §4.4 | creation date | run labels |
 | Monthly opened / closed | run | §4.5 | creation / closing date, calendar month | run labels; project, issue types and Additional JQL |
